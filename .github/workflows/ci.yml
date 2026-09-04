@@ -1,0 +1,74 @@
+name: Enterprise Employee Portal CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  # =========================================================================
+  # JOB 1: Frontend Verification (Lint & Build)
+  # =========================================================================
+  frontend-check:
+    name: Frontend Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Frontend Dependencies
+        working-directory: ./client
+        run: npm ci || npm install
+
+      - name: Build Frontend (Vite)
+        working-directory: ./client
+        run: npm run build
+
+  # =========================================================================
+  # JOB 2: Backend Verification (Syntax & Tests)
+  # =========================================================================
+  backend-check:
+    name: Backend Lint & Node Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Backend Dependencies
+        working-directory: ./server
+        run: npm ci || npm install
+
+      - name: Syntax Check on Server
+        working-directory: ./server
+        run: node --check server.js
+
+  # =========================================================================
+  # JOB 3: Docker Compose Validation
+  # =========================================================================
+  docker-check:
+    name: Docker Configuration Validation
+    runs-on: ubuntu-latest
+    needs: [frontend-check, backend-check]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml
+        run: |
+          cp .env.example .env
+          docker compose config --quiet
+          echo "docker-compose.yml is valid."

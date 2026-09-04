@@ -1,0 +1,86 @@
+# ============================================================
+# 🚫 AI Tools — không commit vào repo
+# ============================================================
+spec-kit/
+taste-skill/
+impeccable/
+
+# ============================================================
+# 📁 Thư mục thực tập — không push lên GitHub
+# ============================================================
+docs/
+
+# ============================================================
+# 💻 IDE & Editor
+# ============================================================
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# JetBrains (WebStorm, IntelliJ...)
+.idea/
+*.iml
+
+# Cursor
+.cursor/
+
+# ============================================================
+# 🖥️ Hệ điều hành
+# ============================================================
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+ehthumbs.db
+
+# macOS
+.DS_Store
+.AppleDouble
+._*
+
+# Linux
+.directory
+
+# ============================================================
+# 📦 Node.js
+# ============================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnp/
+
+# Build outputs
+dist/
+build/
+.next/
+
+# ============================================================
+# 🔑 Secrets & Config cá nhân
+# ============================================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+secrets.json
+config.local.*
+credentials.json
+
+# ============================================================
+# 🗂️ Misc
+# ============================================================
+*.log
+*.tmp
+*.temp
+*.bak
+*.orig
+.cache/
+tmp/
+temp/
+coverage/

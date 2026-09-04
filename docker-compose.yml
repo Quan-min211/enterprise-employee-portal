@@ -1,0 +1,65 @@
+services:
+
+  # ---------------------------------------------------------------------------
+  # MySQL 8.0
+  # ---------------------------------------------------------------------------
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-eep_db}
+      MYSQL_USER: ${DB_USER:-eep_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-eep_secret_change_me}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_secret_change_me}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USER:-eep_user}", "-p${DB_PASSWORD:-eep_secret_change_me}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # Express.js Backend API
+  # ---------------------------------------------------------------------------
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-eep_db}
+      DB_USER: ${DB_USER:-eep_user}
+      DB_PASSWORD: ${DB_PASSWORD:-eep_secret_change_me}
+      JWT_SECRET: ${JWT_SECRET:-change_this_jwt_secret_in_production}
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # ReactJS Frontend (Vite build served via nginx)
+  # Development: use `npm run dev` locally instead
+  # ---------------------------------------------------------------------------
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - server
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
