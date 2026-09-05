@@ -1,15 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import axiosClient from '../api/axiosClient';
+import { departmentsApi } from '../api/departmentsApi';
+import { employeesApi } from '../api/employeesApi';
 
 export default function Employees() {
   const [employees, setEmployees] = useState([]);
-  const [search, setSearch] = useState('');
+  const [departments, setDepartments] = useState([]);
+  const [filters, setFilters] = useState({ search: '', department_id: '' });
   const [loading, setLoading] = useState(true);
 
-  const fetchEmployees = async (query = '') => {
+  const fetchEmployees = async (nextFilters = filters) => {
     setLoading(true);
     try {
-      const res = await axiosClient.get(`/employees?search=${encodeURIComponent(query)}`);
+      const res = await employeesApi.list({
+        search: nextFilters.search || undefined,
+        department_id: nextFilters.department_id || undefined,
+        limit: 50
+      });
       setEmployees(res.employees || []);
     } catch (err) {
       console.error('Error fetching employees:', err);
@@ -19,56 +25,77 @@ export default function Employees() {
   };
 
   useEffect(() => {
-    fetchEmployees();
+    departmentsApi.list()
+      .then((res) => setDepartments(res.departments || []))
+      .catch((err) => console.error('Error fetching departments:', err));
   }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      fetchEmployees(filters);
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [filters.search, filters.department_id]);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchEmployees(search);
+    fetchEmployees(filters);
   };
 
   return (
     <section aria-labelledby="emp-heading">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-6)' }}>
-        <div>
-          <h1 id="emp-heading">Danh Bạ Nhân Viên</h1>
-          <p>Tra cứu thông tin liên lạc, phòng ban và chức vụ của cán bộ công nhân viên Fu Sheng.</p>
-        </div>
+      <header className="page-header">
+        <section>
+          <h1 id="emp-heading">Danh Ba Nhan Vien</h1>
+          <p>Tra cuu thong tin lien lac, phong ban va chuc vu cua can bo cong nhan vien Fu Sheng.</p>
+        </section>
 
         <search>
-          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 'var(--space-2)' }}>
-            <label htmlFor="search-input" className="visually-hidden" style={{ position: 'absolute', opacity: 0 }}>
-              Tìm kiếm nhân viên
-            </label>
+          <form className="search-form" onSubmit={handleSearch}>
+            <label htmlFor="search-input" className="visually-hidden">Tim kiem nhan vien</label>
             <input
               id="search-input"
               type="search"
-              placeholder="Tìm theo tên, mã NV, email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ width: '280px' }}
+              placeholder="Tim theo ten, ma NV, email..."
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
             />
-            <button type="submit" className="btn btn-primary">Tìm</button>
+
+            <label htmlFor="department-filter" className="visually-hidden">Loc phong ban</label>
+            <select
+              id="department-filter"
+              value={filters.department_id}
+              onChange={(e) => setFilters({ ...filters, department_id: e.target.value })}
+              aria-label="Loc theo phong ban"
+            >
+              <option value="">Tat ca phong ban</option>
+              {departments.map((department) => (
+                <option key={department.id} value={department.id}>{department.name}</option>
+              ))}
+            </select>
+
+            <button type="submit" className="btn btn-primary">Tim</button>
           </form>
         </search>
       </header>
 
       {loading ? (
-        <p>Đang tải danh sách nhân viên...</p>
+        <p>Dang tai danh sach nhan vien...</p>
       ) : employees.length === 0 ? (
-        <p style={{ color: 'var(--text-muted)' }}>Không tìm thấy nhân viên nào phù hợp.</p>
+        <p className="muted">Khong tim thay nhan vien nao phu hop.</p>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
+        <section className="table-shell" aria-label="Bang danh ba nhan vien">
           <table>
-            <caption>Danh sách cán bộ nhân viên công ty</caption>
+            <caption>Danh sach can bo nhan vien cong ty</caption>
             <thead>
               <tr>
-                <th scope="col">Mã NV</th>
-                <th scope="col">Họ và Tên</th>
-                <th scope="col">Phòng Ban</th>
-                <th scope="col">Chức Vụ</th>
+                <th scope="col">Ma NV</th>
+                <th scope="col">Ho va Ten</th>
+                <th scope="col">Phong Ban</th>
+                <th scope="col">Chuc Vu</th>
                 <th scope="col">Email</th>
-                <th scope="col">Số Điện Thoại</th>
+                <th scope="col">So Dien Thoai</th>
               </tr>
             </thead>
             <tbody>
@@ -76,15 +103,15 @@ export default function Employees() {
                 <tr key={emp.id}>
                   <td><code>{emp.employee_code}</code></td>
                   <td><strong>{emp.full_name}</strong></td>
-                  <td>{emp.department?.name || 'Chưa phân bổ'}</td>
-                  <td>{emp.position || 'Nhân viên'}</td>
+                  <td>{emp.department?.name || 'Chua phan bo'}</td>
+                  <td>{emp.position || 'Nhan vien'}</td>
                   <td><a href={`mailto:${emp.email}`}>{emp.email}</a></td>
                   <td>{emp.phone || 'N/A'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </section>
       )}
     </section>
   );

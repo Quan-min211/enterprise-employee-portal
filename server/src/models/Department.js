@@ -19,6 +19,10 @@ export const Department = sequelize.define('Department', {
   description: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  manager_name: {
+    type: DataTypes.STRING(100),
+    allowNull: true
   }
 }, {
   tableName: 'departments'

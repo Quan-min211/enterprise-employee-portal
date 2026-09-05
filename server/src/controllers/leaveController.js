@@ -1,25 +1,64 @@
-import { LeaveRequest, User, Department } from '../models/index.js';
+import { Op } from 'sequelize';
+import { Department, LeaveRequest, User } from '../models/index.js';
+import { writeAuditLog } from '../utils/auditLogger.js';
+
+const calculateBusinessDays = (startDate, endDate) => {
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) {
+    return 0;
+  }
+
+  let days = 0;
+  const cursor = new Date(start);
+
+  while (cursor <= end) {
+    const day = cursor.getDay();
+    if (day !== 0) {
+      days += day === 6 ? 0.5 : 1;
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return days || 0.5;
+};
 
 export const createLeaveRequest = async (req, res, next) => {
   try {
-    const { leave_type, start_date, end_date, reason } = req.body;
+    const { request_type = 'leave', leave_type, start_date, end_date, reason } = req.body;
+    const dayCount = calculateBusinessDays(start_date, end_date);
 
-    if (!start_date || !end_date || !reason) {
-      return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ thông tin ngày bắt đầu, kết thúc và lý do.' });
+    if (dayCount <= 0) {
+      return res.status(400).json({ success: false, message: 'Khoang thoi gian dang ky khong hop le.' });
     }
 
     const request = await LeaveRequest.create({
       user_id: req.user.id,
-      leave_type: leave_type || 'annual',
+      request_type,
+      leave_type: request_type === 'overtime' ? 'overtime' : (leave_type || 'annual'),
       start_date,
       end_date,
       reason,
+      day_count: dayCount,
       status: 'pending'
+    });
+
+    await writeAuditLog({
+      userId: req.user.id,
+      action: 'leave.create',
+      entityType: 'leave_request',
+      entityId: request.id,
+      details: {
+        request_type: request.request_type,
+        leave_type: request.leave_type,
+        day_count: Number(request.day_count)
+      }
     });
 
     res.status(201).json({
       success: true,
-      message: 'Gửi đơn nghỉ phép thành công.',
+      message: 'Gui don thanh cong.',
       request
     });
   } catch (error) {
@@ -31,15 +70,23 @@ export const getLeaveRequests = async (req, res, next) => {
   try {
     const where = {};
 
-    // If regular employee, only show their own requests
     if (req.user.role === 'employee') {
       where.user_id = req.user.id;
+    }
+
+    if (req.query.status) {
+      where.status = req.query.status;
     }
 
     const requests = await LeaveRequest.findAll({
       where,
       include: [
-        { model: User, as: 'applicant', attributes: ['id', 'full_name', 'employee_code', 'position'], include: [{ model: Department, as: 'department', attributes: ['name'] }] },
+        {
+          model: User,
+          as: 'applicant',
+          attributes: ['id', 'full_name', 'employee_code', 'position'],
+          include: [{ model: Department, as: 'department', attributes: ['name'] }]
+        },
         { model: User, as: 'approver', attributes: ['id', 'full_name'] }
       ],
       order: [['created_at', 'DESC']]
@@ -56,13 +103,13 @@ export const updateLeaveStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status, manager_comment } = req.body;
 
-    if (!['approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ message: 'Trạng thái chỉ có thể là approved hoặc rejected.' });
-    }
-
     const request = await LeaveRequest.findByPk(id);
     if (!request) {
-      return res.status(404).json({ message: 'Không tìm thấy đơn xin nghỉ phép.' });
+      return res.status(404).json({ success: false, message: 'Khong tim thay don.' });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({ success: false, message: 'Don nay da duoc xu ly truoc do.' });
     }
 
     request.status = status;
@@ -70,11 +117,51 @@ export const updateLeaveStatus = async (req, res, next) => {
     request.manager_comment = manager_comment || null;
     await request.save();
 
+    await writeAuditLog({
+      userId: req.user.id,
+      action: `leave.${status}`,
+      entityType: 'leave_request',
+      entityId: request.id,
+      details: { manager_comment: request.manager_comment }
+    });
+
     res.status(200).json({
       success: true,
-      message: `Đã ${status === 'approved' ? 'duyệt' : 'từ chối'} đơn nghỉ phép thành công.`,
+      message: status === 'approved' ? 'Da duyet don thanh cong.' : 'Da tu choi don thanh cong.',
       request
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getLeaveStats = async (req, res, next) => {
+  try {
+    const year = Number(req.query.year) || new Date().getFullYear();
+    const where = {
+      start_date: {
+        [Op.gte]: `${year}-01-01`,
+        [Op.lte]: `${year}-12-31`
+      }
+    };
+
+    if (req.user.role === 'employee') {
+      where.user_id = req.user.id;
+    }
+
+    const requests = await LeaveRequest.findAll({ where });
+    const stats = requests.reduce((acc, request) => {
+      acc.byStatus[request.status] = (acc.byStatus[request.status] || 0) + 1;
+      acc.totalDays += Number(request.day_count || 0);
+      return acc;
+    }, {
+      year,
+      totalRequests: requests.length,
+      totalDays: 0,
+      byStatus: { pending: 0, approved: 0, rejected: 0 }
+    });
+
+    res.status(200).json({ success: true, stats });
   } catch (error) {
     next(error);
   }

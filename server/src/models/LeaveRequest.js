@@ -7,8 +7,13 @@ export const LeaveRequest = sequelize.define('LeaveRequest', {
     primaryKey: true,
     autoIncrement: true
   },
+  request_type: {
+    type: DataTypes.ENUM('leave', 'overtime'),
+    defaultValue: 'leave',
+    allowNull: false
+  },
   leave_type: {
-    type: DataTypes.ENUM('annual', 'sick', 'unpaid', 'other'),
+    type: DataTypes.ENUM('annual', 'sick', 'unpaid', 'overtime', 'other'),
     defaultValue: 'annual',
     allowNull: false
   },
@@ -22,6 +27,11 @@ export const LeaveRequest = sequelize.define('LeaveRequest', {
   },
   reason: {
     type: DataTypes.TEXT,
+    allowNull: false
+  },
+  day_count: {
+    type: DataTypes.DECIMAL(5, 2),
+    defaultValue: 1,
     allowNull: false
   },
   status: {

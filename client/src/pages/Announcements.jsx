@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import axiosClient from '../api/axiosClient';
+import { announcementsApi } from '../api/announcementsApi';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Announcements() {
   const { user } = useAuth();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [priority, setPriority] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ title: '', content: '', priority: 'normal' });
+  const [formData, setFormData] = useState({ title: '', content: '', priority: 'normal', expires_at: '' });
 
-  const fetchAnnouncements = async () => {
+  const fetchAnnouncements = async (nextPriority = priority) => {
     setLoading(true);
     try {
-      const res = await axiosClient.get('/announcements');
+      const res = await announcementsApi.list({ priority: nextPriority || undefined });
       setAnnouncements(res.announcements || []);
     } catch (err) {
       console.error('Error fetching announcements:', err);
@@ -22,18 +23,21 @@ export default function Announcements() {
   };
 
   useEffect(() => {
-    fetchAnnouncements();
-  }, []);
+    fetchAnnouncements(priority);
+  }, [priority]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      await axiosClient.post('/announcements', formData);
+      await announcementsApi.create({
+        ...formData,
+        expires_at: formData.expires_at || null
+      });
       setShowModal(false);
-      setFormData({ title: '', content: '', priority: 'normal' });
+      setFormData({ title: '', content: '', priority: 'normal', expires_at: '' });
       fetchAnnouncements();
     } catch (err) {
-      alert(err.message || 'Lỗi khi đăng thông báo');
+      alert(err.message || 'Loi khi dang thong bao');
     }
   };
 
@@ -41,111 +45,125 @@ export default function Announcements() {
 
   return (
     <section aria-labelledby="news-heading">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
-        <div>
-          <h1 id="news-heading">Bảng Tin & Thông Báo Công Ty</h1>
-          <p>Các tin tức chính sách, an toàn nhà máy và sự kiện nội bộ Fu Sheng.</p>
-        </div>
+      <header className="page-header">
+        <section>
+          <h1 id="news-heading">Bang Tin & Thong Bao Cong Ty</h1>
+          <p>Cac tin tuc chinh sach, an toan nha may va su kien noi bo Fu Sheng.</p>
+        </section>
 
-        {isPublisher && (
-          <button onClick={() => setShowModal(true)} className="btn btn-primary">
-            + Đăng thông báo mới
-          </button>
-        )}
+        <section className="toolbar" aria-label="Cong cu bang tin">
+          <label htmlFor="priority-filter" className="visually-hidden">Loc muc uu tien</label>
+          <select
+            id="priority-filter"
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+            aria-label="Loc thong bao theo muc uu tien"
+          >
+            <option value="">Tat ca muc uu tien</option>
+            <option value="urgent">Urgent</option>
+            <option value="important">Important</option>
+            <option value="normal">Normal</option>
+          </select>
+
+          {isPublisher && (
+            <button type="button" onClick={() => setShowModal(true)} className="btn btn-primary">
+              Dang thong bao moi
+            </button>
+          )}
+        </section>
       </header>
 
       {showModal && (
-        <dialog open style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          backgroundColor: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-lg)',
-          padding: 'var(--space-6)',
-          width: '90%',
-          maxWidth: '550px',
-          color: 'var(--text-primary)',
-          zIndex: 1000
-        }}>
-          <h2 style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>Tạo Thông Báo Mới</h2>
+        <dialog open className="dialog" aria-labelledby="announcement-dialog-title">
+          <h2 id="announcement-dialog-title">Tao Thong Bao Moi</h2>
           <form onSubmit={handleCreate}>
-            <div style={{ marginBottom: 'var(--space-3)' }}>
-              <label htmlFor="ann_title">Tiêu đề thông báo</label>
-              <input
-                id="ann_title"
-                required
-                placeholder="VD: Lịch bảo trì hệ thống điện xưởng 2..."
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              />
-            </div>
+            <fieldset>
+              <legend className="visually-hidden">Thong tin thong bao noi bo</legend>
 
-            <div style={{ marginBottom: 'var(--space-3)' }}>
-              <label htmlFor="ann_priority">Mức độ ưu tiên</label>
-              <select
-                id="ann_priority"
-                value={formData.priority}
-                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-              >
-                <option value="normal">Bình thường (Normal)</option>
-                <option value="important">Quan trọng (Important)</option>
-                <option value="urgent">Khẩn cấp (Urgent)</option>
-              </select>
-            </div>
+              <section className="field-group">
+                <label htmlFor="ann_title">Tieu de thong bao</label>
+                <input
+                  id="ann_title"
+                  required
+                  minLength={5}
+                  placeholder="VD: Lich bao tri he thong dien xuong 2..."
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                />
+              </section>
 
-            <div style={{ marginBottom: 'var(--space-4)' }}>
-              <label htmlFor="ann_content">Nội dung chi tiết</label>
-              <textarea
-                id="ann_content"
-                required
-                rows={4}
-                placeholder="Nội dung chi tiết của thông báo..."
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-              />
-            </div>
+              <section className="form-grid">
+                <section className="field-group">
+                  <label htmlFor="ann_priority">Muc uu tien</label>
+                  <select
+                    id="ann_priority"
+                    value={formData.priority}
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="important">Important</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </section>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
-              <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary">
-                Hủy
-              </button>
-              <button type="submit" className="btn btn-primary">
-                Đăng thông báo
-              </button>
-            </div>
+                <section className="field-group">
+                  <label htmlFor="ann_expires_at">Ngay het han</label>
+                  <input
+                    id="ann_expires_at"
+                    type="date"
+                    value={formData.expires_at}
+                    onChange={(e) => setFormData({ ...formData, expires_at: e.target.value })}
+                  />
+                </section>
+              </section>
+
+              <section className="field-group">
+                <label htmlFor="ann_content">Noi dung chi tiet</label>
+                <textarea
+                  id="ann_content"
+                  required
+                  rows={4}
+                  minLength={10}
+                  placeholder="Noi dung chi tiet cua thong bao..."
+                  value={formData.content}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                />
+              </section>
+
+              <section className="action-row">
+                <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary">
+                  Huy
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Dang thong bao
+                </button>
+              </section>
+            </fieldset>
           </form>
         </dialog>
       )}
 
       {loading ? (
-        <p>Đang tải thông báo...</p>
+        <p>Dang tai thong bao...</p>
       ) : announcements.length === 0 ? (
-        <p style={{ color: 'var(--text-muted)' }}>Hiện chưa có thông báo nào.</p>
+        <p className="muted">Hien chua co thong bao nao.</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <section className="stack" aria-label="Danh sach thong bao">
           {announcements.map((ann) => (
-            <article key={ann.id} style={{
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderLeft: ann.priority === 'urgent' ? '4px solid var(--danger)' : ann.priority === 'important' ? '4px solid var(--warning)' : '4px solid var(--accent)',
-              borderRadius: 'var(--radius-md)',
-              padding: 'var(--space-5)'
-            }}>
-              <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
-                <div>
-                  <h2 style={{ fontSize: 'var(--text-lg)', margin: 0 }}>{ann.title}</h2>
-                  <time dateTime={ann.createdAt} style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                    Đăng ngày: {new Date(ann.createdAt).toLocaleDateString('vi-VN')} | Bởi: {ann.author?.full_name || 'Ban Quản Trị'}
+            <article key={ann.id} className={`announcement-card ${ann.priority}`}>
+              <header>
+                <section>
+                  <h2>{ann.title}</h2>
+                  <time dateTime={ann.createdAt}>
+                    Dang ngay: {new Date(ann.createdAt).toLocaleDateString('vi-VN')} | Boi: {ann.author?.full_name || 'Ban Quan Tri'}
                   </time>
-                </div>
-                <span className={`badge badge-${ann.priority}`}>{ann.priority}</span>
+                </section>
+                <mark className={`badge badge-${ann.priority}`}>{ann.priority}</mark>
               </header>
-              <p style={{ margin: 0, whiteSpace: 'pre-line' }}>{ann.content}</p>
+              <p>{ann.content}</p>
             </article>
           ))}
-        </div>
+        </section>
       )}
     </section>
   );

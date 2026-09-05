@@ -45,6 +45,10 @@ export const User = sequelize.define('User', {
     type: DataTypes.STRING(255),
     allowNull: true
   },
+  hire_date: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
+  },
   status: {
     type: DataTypes.ENUM('active', 'inactive'),
     defaultValue: 'active'

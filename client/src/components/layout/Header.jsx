@@ -5,47 +5,30 @@ export default function Header() {
   const { user, logout } = useAuth();
 
   return (
-    <header style={{
-      height: '64px',
-      backgroundColor: 'var(--surface)',
-      borderBottom: '1px solid var(--border)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 var(--space-6)',
-      position: 'sticky',
-      top: 0,
-      zIndex: 100
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-        <strong style={{ fontSize: 'var(--text-lg)', color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
-          FU SHENG PORTAL
-        </strong>
-        <span className="badge badge-normal">INTRANET</span>
-      </div>
+    <header className="topbar">
+      <section className="brand-row" aria-label="Nhan dien he thong">
+        <strong className="brand-name">FU SHENG PORTAL</strong>
+        <mark className="badge badge-normal">INTRANET</mark>
+      </section>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+      <section className="header-actions" aria-label="Tai khoan nguoi dung">
         {user && (
-          <section aria-label="User Profile Summary" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ margin: 0, fontWeight: 600, color: 'var(--text-primary)', fontSize: 'var(--text-sm)' }}>
-                {user.full_name}
-              </p>
-              <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                {user.role?.toUpperCase()} | {user.position || 'Nhân viên'}
-              </p>
-            </div>
+          <article className="profile-summary" aria-label="Tom tat ho so dang nhap">
+            <section className="profile-copy">
+              <p className="profile-name">{user.full_name}</p>
+              <p className="profile-role">{user.role} | {user.position || 'Nhan vien'}</p>
+            </section>
             <button
+              type="button"
               onClick={logout}
-              className="btn btn-secondary"
-              aria-label="Đăng xuất khỏi hệ thống"
-              style={{ padding: 'var(--space-1) var(--space-3)', fontSize: 'var(--text-xs)' }}
+              className="btn btn-secondary compact-button"
+              aria-label="Dang xuat khoi he thong"
             >
-              Đăng xuất
+              Dang xuat
             </button>
-          </section>
+          </article>
         )}
-      </div>
+      </section>
     </header>
   );
 }

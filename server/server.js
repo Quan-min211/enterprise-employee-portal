@@ -2,17 +2,18 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 import { sequelize } from './src/config/database.js';
 import routes from './src/routes/index.js';
 import { errorHandler } from './src/middleware/errorHandler.js';
+import { seedDatabase } from './src/config/seed.js';
 
 dotenv.config({ path: '../.env' });
-dotenv.config(); // fallback to local .env
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middlewares
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true
@@ -21,7 +22,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
@@ -31,32 +31,38 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Main API Routes
 app.use('/api', routes);
-
-// Centralized Error Handler
 app.use(errorHandler);
 
-// Database Sync and Server Startup
-const startServer = async () => {
+export const startServer = async () => {
   try {
     await sequelize.authenticate();
-    console.log('✅ MySQL Database connected successfully.');
+    console.log('MySQL database connected successfully.');
 
-    // Auto-sync schema in development
-    if (process.env.NODE_ENV !== 'production') {
-      await sequelize.sync({ alter: true });
-      console.log('✅ Database models synchronized.');
+    if (process.env.DB_SYNC !== 'false') {
+      await sequelize.sync({ alter: process.env.DB_SYNC_ALTER !== 'false' });
+      console.log('Database models synchronized.');
+    }
+
+    if (process.env.DB_SEED !== 'false') {
+      await seedDatabase();
+      console.log('Seed data ensured.');
     }
 
     app.listen(PORT, () => {
-      console.log(`🚀 Server is running on port ${PORT}`);
-      console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`Server is running on port ${PORT}`);
+      console.log(`Health check: http://localhost:${PORT}/api/health`);
     });
   } catch (error) {
-    console.error('❌ Unable to connect to the database:', error);
+    console.error('Unable to connect to the database:', error);
     process.exit(1);
   }
 };
 
-startServer();
+const isDirectRun = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+
+if (isDirectRun) {
+  startServer();
+}
+
+export default app;

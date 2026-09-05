@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -19,61 +19,32 @@ export default function Login() {
       await login(email, password);
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Đăng nhập thất bại.');
+      setError(err.message || 'Dang nhap that bai.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'var(--ground)',
-      padding: 'var(--space-4)'
-    }}>
-      <article style={{
-        width: '100%',
-        maxWidth: '420px',
-        backgroundColor: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-lg)',
-        padding: 'var(--space-8)',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
-      }}>
-        <header style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
-          <h1 style={{ fontSize: 'var(--text-2xl)', marginBottom: 'var(--space-2)' }}>
-            Đăng Nhập Cổng Nội Bộ
-          </h1>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', margin: 0 }}>
-            Công ty TNHH Công nghiệp Fu Sheng (Việt Nam)
-          </p>
+    <main className="login-screen">
+      <article className="login-card">
+        <header>
+          <h1>Dang Nhap Cong Noi Bo</h1>
+          <p>Cong ty TNHH Cong nghiep Fu Sheng (Viet Nam)</p>
         </header>
 
         {error && (
-          <aside aria-live="polite" style={{
-            backgroundColor: 'var(--danger-bg)',
-            color: 'var(--danger-text)',
-            padding: 'var(--space-3)',
-            borderRadius: 'var(--radius-sm)',
-            marginBottom: 'var(--space-4)',
-            fontSize: 'var(--text-sm)',
-            border: '1px solid var(--danger)'
-          }}>
+          <aside className="alert" aria-live="polite">
             {error}
           </aside>
         )}
 
         <form onSubmit={handleSubmit}>
-          <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
-            <legend className="visually-hidden" style={{ position: 'absolute', opacity: 0 }}>
-              Thông tin xác thực
-            </legend>
+          <fieldset>
+            <legend className="visually-hidden">Thong tin xac thuc</legend>
 
-            <div style={{ marginBottom: 'var(--space-4)' }}>
-              <label htmlFor="email">Email công vụ</label>
+            <section className="field-group">
+              <label htmlFor="email">Email cong vu</label>
               <input
                 id="email"
                 type="email"
@@ -82,36 +53,33 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-            </div>
+            </section>
 
-            <div style={{ marginBottom: 'var(--space-6)' }}>
-              <label htmlFor="password">Mật khẩu</label>
+            <section className="field-group">
+              <label htmlFor="password">Mat khau</label>
               <input
                 id="password"
                 type="password"
                 required
-                placeholder="••••••••"
+                placeholder="Nhap mat khau"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-            </div>
+            </section>
 
             <button
               type="submit"
               disabled={loading}
-              className="btn btn-primary"
-              style={{ width: '100%', height: '42px' }}
+              className="btn btn-primary full-width"
             >
-              {loading ? 'Đang xác thực...' : 'Đăng nhập vào hệ thống'}
+              {loading ? 'Dang xac thuc...' : 'Dang nhap vao he thong'}
             </button>
           </fieldset>
         </form>
 
-        <footer style={{ marginTop: 'var(--space-6)', textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-          <p style={{ margin: 0 }}>Tài khoản mặc định thử nghiệm:</p>
-          <code style={{ display: 'block', marginTop: 'var(--space-1)', color: 'var(--accent)' }}>
-            admin@fusheng.com.vn / Admin@123
-          </code>
+        <footer>
+          <p>Tai khoan mac dinh thu nghiem:</p>
+          <code>admin@fusheng.com.vn / Admin@123</code>
         </footer>
       </article>
     </main>

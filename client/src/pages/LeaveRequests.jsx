@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import axiosClient from '../api/axiosClient';
+import { leavesApi } from '../api/leavesApi';
 import { useAuth } from '../contexts/AuthContext';
+
+const leaveLabels = {
+  annual: 'Phep nam',
+  sick: 'Nghi om',
+  unpaid: 'Nghi khong luong',
+  overtime: 'Lam them gio',
+  other: 'Khac'
+};
 
 export default function LeaveRequests() {
   const { user } = useAuth();
@@ -8,6 +16,7 @@ export default function LeaveRequests() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
+    request_type: 'leave',
     leave_type: 'annual',
     start_date: '',
     end_date: '',
@@ -17,7 +26,7 @@ export default function LeaveRequests() {
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const res = await axiosClient.get('/leaves');
+      const res = await leavesApi.list();
       setRequests(res.requests || []);
     } catch (err) {
       console.error('Error fetching leave requests:', err);
@@ -33,22 +42,22 @@ export default function LeaveRequests() {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      await axiosClient.post('/leaves', formData);
+      await leavesApi.create(formData);
       setShowModal(false);
-      setFormData({ leave_type: 'annual', start_date: '', end_date: '', reason: '' });
+      setFormData({ request_type: 'leave', leave_type: 'annual', start_date: '', end_date: '', reason: '' });
       fetchRequests();
     } catch (err) {
-      alert(err.message || 'Lỗi khi gửi đơn');
+      alert(err.message || 'Loi khi gui don');
     }
   };
 
   const handleAction = async (id, status) => {
-    const comment = prompt(`Lý do ${status === 'approved' ? 'duyệt' : 'từ chối'}:`);
+    const comment = window.prompt(`Ly do ${status === 'approved' ? 'duyet' : 'tu choi'}:`);
     try {
-      await axiosClient.patch(`/leaves/${id}/status`, { status, manager_comment: comment });
+      await leavesApi.updateStatus(id, { status, manager_comment: comment });
       fetchRequests();
     } catch (err) {
-      alert(err.message || 'Lỗi xử lý đơn');
+      alert(err.message || 'Loi xu ly don');
     }
   };
 
@@ -56,132 +65,142 @@ export default function LeaveRequests() {
 
   return (
     <section aria-labelledby="leaves-heading">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
-        <div>
-          <h1 id="leaves-heading">Đơn Nghỉ Phép & Làm Thêm Giờ</h1>
-          <p>Quản lý quy trình đăng ký và phê duyệt nghỉ phép trực tuyến.</p>
-        </div>
+      <header className="page-header">
+        <section>
+          <h1 id="leaves-heading">Don Nghi Phep & Lam Them Gio</h1>
+          <p>Quan ly quy trinh dang ky va phe duyet nghi phep truc tuyen.</p>
+        </section>
 
-        <button onClick={() => setShowModal(true)} className="btn btn-primary">
-          + Tạo đơn mới
+        <button type="button" onClick={() => setShowModal(true)} className="btn btn-primary">
+          Tao don moi
         </button>
       </header>
 
-      {/* Leave Request Dialog / Modal */}
       {showModal && (
-        <dialog open style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          backgroundColor: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-lg)',
-          padding: 'var(--space-6)',
-          width: '90%',
-          maxWidth: '500px',
-          color: 'var(--text-primary)',
-          zIndex: 1000,
-          boxShadow: '0 16px 32px rgba(0,0,0,0.5)'
-        }}>
-          <h2 style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>Đăng Ký Nghỉ Phép Mới</h2>
+        <dialog open className="dialog" aria-labelledby="leave-dialog-title">
+          <h2 id="leave-dialog-title">Dang Ky Yeu Cau Moi</h2>
           <form onSubmit={handleCreate}>
-            <div style={{ marginBottom: 'var(--space-3)' }}>
-              <label htmlFor="leave_type">Loại phép</label>
-              <select
-                id="leave_type"
-                value={formData.leave_type}
-                onChange={(e) => setFormData({ ...formData, leave_type: e.target.value })}
-              >
-                <option value="annual">Phép năm</option>
-                <option value="sick">Nghỉ ốm / Bệnh</option>
-                <option value="unpaid">Nghỉ không lương</option>
-                <option value="other">Lý do khác</option>
-              </select>
-            </div>
+            <fieldset>
+              <legend className="visually-hidden">Thong tin don nghi phep hoac OT</legend>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
-              <div>
-                <label htmlFor="start_date">Từ ngày</label>
-                <input
-                  id="start_date"
-                  type="date"
+              <section className="field-group">
+                <label htmlFor="request_type">Nhom yeu cau</label>
+                <select
+                  id="request_type"
+                  value={formData.request_type}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    request_type: e.target.value,
+                    leave_type: e.target.value === 'overtime' ? 'overtime' : 'annual'
+                  })}
+                >
+                  <option value="leave">Nghi phep</option>
+                  <option value="overtime">Lam them gio (OT)</option>
+                </select>
+              </section>
+
+              <section className="field-group">
+                <label htmlFor="leave_type">Loai phep</label>
+                <select
+                  id="leave_type"
+                  value={formData.leave_type}
+                  disabled={formData.request_type === 'overtime'}
+                  onChange={(e) => setFormData({ ...formData, leave_type: e.target.value })}
+                >
+                  <option value="annual">Phep nam</option>
+                  <option value="sick">Nghi om / Benh</option>
+                  <option value="unpaid">Nghi khong luong</option>
+                  <option value="other">Ly do khac</option>
+                  <option value="overtime">Lam them gio</option>
+                </select>
+              </section>
+
+              <section className="form-grid">
+                <section className="field-group">
+                  <label htmlFor="start_date">Tu ngay</label>
+                  <input
+                    id="start_date"
+                    type="date"
+                    required
+                    value={formData.start_date}
+                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                  />
+                </section>
+                <section className="field-group">
+                  <label htmlFor="end_date">Den ngay</label>
+                  <input
+                    id="end_date"
+                    type="date"
+                    required
+                    value={formData.end_date}
+                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                  />
+                </section>
+              </section>
+
+              <section className="field-group">
+                <label htmlFor="reason">Ly do cu the</label>
+                <textarea
+                  id="reason"
                   required
-                  value={formData.start_date}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                  rows={3}
+                  minLength={10}
+                  placeholder="Ghi ro ly do xin nghi hoac lam them gio..."
+                  value={formData.reason}
+                  onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                 />
-              </div>
-              <div>
-                <label htmlFor="end_date">Đến ngày</label>
-                <input
-                  id="end_date"
-                  type="date"
-                  required
-                  value={formData.end_date}
-                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                />
-              </div>
-            </div>
+              </section>
 
-            <div style={{ marginBottom: 'var(--space-4)' }}>
-              <label htmlFor="reason">Lý do cụ thể</label>
-              <textarea
-                id="reason"
-                required
-                rows={3}
-                placeholder="Ghi rõ lý do xin nghỉ..."
-                value={formData.reason}
-                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
-              <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary">
-                Hủy bỏ
-              </button>
-              <button type="submit" className="btn btn-primary">
-                Gửi đơn duyệt
-              </button>
-            </div>
+              <section className="action-row">
+                <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary">
+                  Huy bo
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Gui don duyet
+                </button>
+              </section>
+            </fieldset>
           </form>
         </dialog>
       )}
 
       {loading ? (
-        <p>Đang tải danh sách đơn...</p>
+        <p>Dang tai danh sach don...</p>
       ) : requests.length === 0 ? (
-        <p style={{ color: 'var(--text-muted)' }}>Chưa có đơn xin nghỉ phép nào.</p>
+        <p className="muted">Chua co don xin nghi phep nao.</p>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
+        <section className="table-shell" aria-label="Bang lich su don nghi phep">
           <table>
-            <caption>Lịch sử đơn nghỉ phép</caption>
+            <caption>Lich su don nghi phep va OT</caption>
             <thead>
               <tr>
-                <th scope="col">Người nộp</th>
-                <th scope="col">Loại phép</th>
-                <th scope="col">Thời gian</th>
-                <th scope="col">Lý do</th>
-                <th scope="col">Trạng thái</th>
-                {isManager && <th scope="col">Thao tác</th>}
+                <th scope="col">Nguoi nop</th>
+                <th scope="col">Loai</th>
+                <th scope="col">Thoi gian</th>
+                <th scope="col">So ngay</th>
+                <th scope="col">Ly do</th>
+                <th scope="col">Trang thai</th>
+                {isManager && <th scope="col">Thao tac</th>}
               </tr>
             </thead>
             <tbody>
-              {requests.map((req) => (
-                <tr key={req.id}>
-                  <td><strong>{req.applicant?.full_name}</strong> ({req.applicant?.employee_code})</td>
-                  <td>{req.leave_type === 'annual' ? 'Phép năm' : req.leave_type === 'sick' ? 'Nghỉ ốm' : 'Khác'}</td>
-                  <td>{req.start_date} → {req.end_date}</td>
-                  <td>{req.reason}</td>
-                  <td><span className={`badge badge-${req.status}`}>{req.status}</span></td>
+              {requests.map((request) => (
+                <tr key={request.id}>
+                  <td><strong>{request.applicant?.full_name}</strong> ({request.applicant?.employee_code})</td>
+                  <td>{leaveLabels[request.leave_type] || 'Khac'}</td>
+                  <td>{request.start_date} - {request.end_date}</td>
+                  <td>{Number(request.day_count || 0)}</td>
+                  <td>{request.reason}</td>
+                  <td><mark className={`badge badge-${request.status}`}>{request.status}</mark></td>
                   {isManager && (
                     <td>
-                      {req.status === 'pending' ? (
-                        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                          <button onClick={() => handleAction(req.id, 'approved')} className="btn btn-primary" style={{ padding: '2px 8px', fontSize: 'var(--text-xs)' }}>Duyệt</button>
-                          <button onClick={() => handleAction(req.id, 'rejected')} className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: 'var(--text-xs)', color: 'var(--danger-text)' }}>Từ chối</button>
-                        </div>
+                      {request.status === 'pending' ? (
+                        <section className="action-row">
+                          <button type="button" onClick={() => handleAction(request.id, 'approved')} className="btn btn-primary compact-button">Duyet</button>
+                          <button type="button" onClick={() => handleAction(request.id, 'rejected')} className="btn btn-secondary compact-button danger-text">Tu choi</button>
+                        </section>
                       ) : (
-                        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Đã xử lý</span>
+                        <small className="muted">Da xu ly</small>
                       )}
                     </td>
                   )}
@@ -189,7 +208,7 @@ export default function LeaveRequests() {
               ))}
             </tbody>
           </table>
-        </div>
+        </section>
       )}
     </section>
   );

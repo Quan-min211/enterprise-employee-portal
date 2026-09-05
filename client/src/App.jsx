@@ -9,14 +9,15 @@ import Login from './pages/Login';
 import Employees from './pages/Employees';
 import LeaveRequests from './pages/LeaveRequests';
 import Announcements from './pages/Announcements';
+import Profile from './pages/Profile';
 
 function ProtectedLayout() {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--ground)' }}>
-        <p>Đang tải dữ liệu phiên làm việc...</p>
+      <main className="loading-screen">
+        <p>Dang tai du lieu phien lam viec...</p>
       </main>
     );
   }
@@ -26,22 +27,23 @@ function ProtectedLayout() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <section className="app-shell" aria-label="Enterprise Employee Portal">
       <Header />
-      <div style={{ display: 'flex', flex: 1 }}>
+      <section className="app-body">
         <Sidebar />
-        <main style={{ flex: 1, padding: 'var(--space-6)', backgroundColor: 'var(--ground)', minHeight: 'calc(100vh - 64px)' }}>
+        <main className="app-main">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/employees" element={<Employees />} />
             <Route path="/leaves" element={<LeaveRequests />} />
             <Route path="/announcements" element={<Announcements />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
-      </div>
+      </section>
       <Footer />
-    </div>
+    </section>
   );
 }
 

@@ -3,41 +3,24 @@ import { NavLink } from 'react-router-dom';
 
 export default function Sidebar() {
   const navItems = [
-    { to: '/', label: 'Bảng điều khiển', icon: '📊' },
-    { to: '/employees', label: 'Danh bạ nhân viên', icon: '👥' },
-    { to: '/leaves', label: 'Đơn nghỉ phép & OT', icon: '📝' },
-    { to: '/announcements', label: 'Bảng tin công ty', icon: '📢' }
+    { to: '/', label: 'Bang dieu khien', icon: 'DB' },
+    { to: '/employees', label: 'Danh ba nhan vien', icon: 'NV' },
+    { to: '/leaves', label: 'Don nghi phep & OT', icon: 'OT' },
+    { to: '/announcements', label: 'Bang tin cong ty', icon: 'TB' },
+    { to: '/profile', label: 'Ho so ca nhan', icon: 'HS' }
   ];
 
   return (
-    <aside aria-label="Menu điều hướng chính" style={{
-      width: '240px',
-      backgroundColor: 'var(--surface)',
-      borderRight: '1px solid var(--border)',
-      minHeight: 'calc(100vh - 64px)',
-      padding: 'var(--space-4) 0'
-    }}>
+    <aside className="sidebar" aria-label="Menu dieu huong chinh">
       <nav aria-label="Sidebar Navigation">
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        <ul className="nav-list">
           {navItems.map((item) => (
-            <li key={item.to} style={{ marginBottom: 'var(--space-1)' }}>
+            <li className="nav-item" key={item.to}>
               <NavLink
                 to={item.to}
-                style={({ isActive }) => ({
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--space-3)',
-                  padding: 'var(--space-3) var(--space-6)',
-                  color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-                  backgroundColor: isActive ? 'var(--accent-subtle)' : 'transparent',
-                  borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
-                  fontWeight: isActive ? 600 : 500,
-                  fontSize: 'var(--text-sm)',
-                  textDecoration: 'none',
-                  transition: 'all var(--transition-fast)'
-                })}
+                className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
               >
-                <span aria-hidden="true">{item.icon}</span>
+                <mark className="nav-icon" aria-hidden="true">{item.icon}</mark>
                 {item.label}
               </NavLink>
             </li>

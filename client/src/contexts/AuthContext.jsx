@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axiosClient from '../api/axiosClient';
+import { authApi } from '../api/authApi';
 
 const AuthContext = createContext(null);
 
@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const data = await axiosClient.get('/auth/me');
+        const data = await authApi.me();
         if (data.success) {
           setUser(data.user);
         }
@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const res = await axiosClient.post('/auth/login', { email, password });
+    const res = await authApi.login(email, password);
     if (res.success) {
       setUser(res.user);
       return res.user;
@@ -32,12 +32,24 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    await axiosClient.post('/auth/logout');
+    try {
+      await authApi.logout();
+    } catch (err) {
+      console.warn('Logout request failed, clearing local session:', err.message);
+    }
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    const data = await authApi.me();
+    if (data.success) {
+      setUser(data.user);
+    }
+    return data.user;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

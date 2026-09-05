@@ -2,7 +2,7 @@ export const errorHandler = (err, req, res, next) => {
   console.error('API Error:', err);
 
   const statusCode = err.statusCode || 500;
-  const message = err.message || 'Đã xảy ra lỗi máy chủ nội bộ.';
+  const message = err.message || 'Da xay ra loi may chu noi bo.';
 
   res.status(statusCode).json({
     success: false,
