@@ -63,6 +63,143 @@ export const getEmployeeById = async (req, res, next) => {
   }
 };
 
+export const createEmployee = async (req, res, next) => {
+  try {
+    const {
+      employee_code,
+      full_name,
+      email,
+      password,
+      role = 'employee',
+      position,
+      phone,
+      department_id,
+      hire_date,
+      status = 'active'
+    } = req.body;
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const employee = await User.create({
+      employee_code,
+      full_name,
+      email,
+      password: hashedPassword,
+      role,
+      position,
+      phone,
+      department_id: department_id || null,
+      hire_date: hire_date || null,
+      status
+    });
+
+    await writeAuditLog({
+      userId: req.user.id,
+      action: 'employee.create',
+      entityType: 'user',
+      entityId: employee.id,
+      details: { employee_code, email, role }
+    });
+
+    const safeEmployee = await User.findByPk(employee.id, {
+      attributes: safeAttributes,
+      include: userInclude
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Tao nhan vien thanh cong.',
+      employee: safeEmployee
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateEmployee = async (req, res, next) => {
+  try {
+    const employee = await User.findByPk(req.params.id);
+
+    if (!employee) {
+      return res.status(404).json({ success: false, message: 'Khong tim thay nhan vien.' });
+    }
+
+    const allowedFields = [
+      'employee_code',
+      'full_name',
+      'email',
+      'role',
+      'position',
+      'phone',
+      'avatar_url',
+      'department_id',
+      'hire_date',
+      'status'
+    ];
+    const payload = allowedFields.reduce((acc, field) => {
+      if (req.body[field] !== undefined) {
+        acc[field] = req.body[field] || null;
+      }
+      return acc;
+    }, {});
+
+    if (req.body.password) {
+      payload.password = await bcrypt.hash(req.body.password, 10);
+    }
+
+    await employee.update(payload);
+
+    await writeAuditLog({
+      userId: req.user.id,
+      action: 'employee.update',
+      entityType: 'user',
+      entityId: employee.id,
+      details: Object.keys(payload).filter((field) => field !== 'password')
+    });
+
+    const safeEmployee = await User.findByPk(employee.id, {
+      attributes: safeAttributes,
+      include: userInclude
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Cap nhat nhan vien thanh cong.',
+      employee: safeEmployee
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deactivateEmployee = async (req, res, next) => {
+  try {
+    const employee = await User.findByPk(req.params.id);
+
+    if (!employee) {
+      return res.status(404).json({ success: false, message: 'Khong tim thay nhan vien.' });
+    }
+
+    if (employee.id === req.user.id) {
+      return res.status(400).json({ success: false, message: 'Khong the khoa tai khoan dang dang nhap.' });
+    }
+
+    employee.status = 'inactive';
+    await employee.save();
+
+    await writeAuditLog({
+      userId: req.user.id,
+      action: 'employee.deactivate',
+      entityType: 'user',
+      entityId: employee.id,
+      details: { employee_code: employee.employee_code }
+    });
+
+    res.status(200).json({ success: true, message: 'Da khoa tai khoan nhan vien.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateMyProfile = async (req, res, next) => {
   try {
     const allowedFields = ['full_name', 'phone', 'avatar_url'];

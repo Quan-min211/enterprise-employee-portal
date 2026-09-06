@@ -10,6 +10,7 @@ import Employees from './pages/Employees';
 import LeaveRequests from './pages/LeaveRequests';
 import Announcements from './pages/Announcements';
 import Profile from './pages/Profile';
+import Departments from './pages/Departments';
 
 function ProtectedLayout() {
   const { user, loading } = useAuth();
@@ -38,6 +39,7 @@ function ProtectedLayout() {
             <Route path="/leaves" element={<LeaveRequests />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/departments" element={<Departments />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

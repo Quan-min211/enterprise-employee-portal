@@ -1,12 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { departmentsApi } from '../api/departmentsApi';
 import { employeesApi } from '../api/employeesApi';
+import { useAuth } from '../contexts/AuthContext';
+
+const emptyEmployeeForm = {
+  employee_code: '',
+  full_name: '',
+  email: '',
+  password: 'Employee@123',
+  role: 'employee',
+  position: '',
+  phone: '',
+  department_id: '',
+  hire_date: ''
+};
 
 export default function Employees() {
+  const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [filters, setFilters] = useState({ search: '', department_id: '' });
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [employeeForm, setEmployeeForm] = useState(emptyEmployeeForm);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const isAdmin = user?.role === 'admin';
 
   const fetchEmployees = async (nextFilters = filters) => {
     setLoading(true);
@@ -41,6 +60,49 @@ export default function Employees() {
   const handleSearch = (e) => {
     e.preventDefault();
     fetchEmployees(filters);
+  };
+
+  const openEmployeeProfile = async (id) => {
+    try {
+      const res = await employeesApi.getById(id);
+      setSelectedEmployee(res.employee);
+    } catch (err) {
+      console.error('Error loading employee profile:', err);
+    }
+  };
+
+  const handleCreateEmployee = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    setError('');
+
+    try {
+      await employeesApi.create({
+        ...employeeForm,
+        department_id: employeeForm.department_id || null,
+        hire_date: employeeForm.hire_date || null
+      });
+      setEmployeeForm(emptyEmployeeForm);
+      setMessage('Tao tai khoan nhan vien thanh cong.');
+      fetchEmployees(filters);
+    } catch (err) {
+      setError(err.message || 'Khong the tao nhan vien.');
+    }
+  };
+
+  const handleDeactivateEmployee = async (employee) => {
+    const confirmed = window.confirm(`Khoa tai khoan ${employee.full_name}?`);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await employeesApi.deactivate(employee.id);
+      setMessage('Da khoa tai khoan nhan vien.');
+      fetchEmployees(filters);
+    } catch (err) {
+      setError(err.message || 'Khong the khoa tai khoan.');
+    }
   };
 
   return (
@@ -80,6 +142,113 @@ export default function Employees() {
         </search>
       </header>
 
+      {message && <aside className="alert success-alert" aria-live="polite">{message}</aside>}
+      {error && <aside className="alert" aria-live="polite">{error}</aside>}
+
+      {isAdmin && (
+        <section className="panel employee-admin-panel" aria-labelledby="employee-admin-heading">
+          <h2 id="employee-admin-heading">Tao Tai Khoan Nhan Vien</h2>
+          <form onSubmit={handleCreateEmployee}>
+            <fieldset>
+              <legend className="visually-hidden">Thong tin tai khoan nhan vien moi</legend>
+
+              <section className="employee-form-grid">
+                <section className="field-group">
+                  <label htmlFor="employee_code">Ma NV</label>
+                  <input
+                    id="employee_code"
+                    required
+                    value={employeeForm.employee_code}
+                    onChange={(e) => setEmployeeForm({ ...employeeForm, employee_code: e.target.value.toUpperCase() })}
+                  />
+                </section>
+
+                <section className="field-group">
+                  <label htmlFor="employee_full_name">Ho ten</label>
+                  <input
+                    id="employee_full_name"
+                    required
+                    value={employeeForm.full_name}
+                    onChange={(e) => setEmployeeForm({ ...employeeForm, full_name: e.target.value })}
+                  />
+                </section>
+
+                <section className="field-group">
+                  <label htmlFor="employee_email">Email</label>
+                  <input
+                    id="employee_email"
+                    type="email"
+                    required
+                    value={employeeForm.email}
+                    onChange={(e) => setEmployeeForm({ ...employeeForm, email: e.target.value })}
+                  />
+                </section>
+
+                <section className="field-group">
+                  <label htmlFor="employee_password">Mat khau tam</label>
+                  <input
+                    id="employee_password"
+                    type="password"
+                    required
+                    minLength={8}
+                    value={employeeForm.password}
+                    onChange={(e) => setEmployeeForm({ ...employeeForm, password: e.target.value })}
+                  />
+                </section>
+
+                <section className="field-group">
+                  <label htmlFor="employee_role">Vai tro</label>
+                  <select
+                    id="employee_role"
+                    value={employeeForm.role}
+                    onChange={(e) => setEmployeeForm({ ...employeeForm, role: e.target.value })}
+                  >
+                    <option value="employee">Employee</option>
+                    <option value="manager">Manager</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </section>
+
+                <section className="field-group">
+                  <label htmlFor="employee_department">Phong ban</label>
+                  <select
+                    id="employee_department"
+                    value={employeeForm.department_id}
+                    onChange={(e) => setEmployeeForm({ ...employeeForm, department_id: e.target.value })}
+                  >
+                    <option value="">Chua phan bo</option>
+                    {departments.map((department) => (
+                      <option key={department.id} value={department.id}>{department.name}</option>
+                    ))}
+                  </select>
+                </section>
+
+                <section className="field-group">
+                  <label htmlFor="employee_position">Chuc vu</label>
+                  <input
+                    id="employee_position"
+                    value={employeeForm.position}
+                    onChange={(e) => setEmployeeForm({ ...employeeForm, position: e.target.value })}
+                  />
+                </section>
+
+                <section className="field-group">
+                  <label htmlFor="employee_hire_date">Ngay vao lam</label>
+                  <input
+                    id="employee_hire_date"
+                    type="date"
+                    value={employeeForm.hire_date}
+                    onChange={(e) => setEmployeeForm({ ...employeeForm, hire_date: e.target.value })}
+                  />
+                </section>
+              </section>
+
+              <button type="submit" className="btn btn-primary">Tao nhan vien</button>
+            </fieldset>
+          </form>
+        </section>
+      )}
+
       {loading ? (
         <p>Dang tai danh sach nhan vien...</p>
       ) : employees.length === 0 ? (
@@ -96,6 +265,7 @@ export default function Employees() {
                 <th scope="col">Chuc Vu</th>
                 <th scope="col">Email</th>
                 <th scope="col">So Dien Thoai</th>
+                <th scope="col">Thao Tac</th>
               </tr>
             </thead>
             <tbody>
@@ -107,11 +277,57 @@ export default function Employees() {
                   <td>{emp.position || 'Nhan vien'}</td>
                   <td><a href={`mailto:${emp.email}`}>{emp.email}</a></td>
                   <td>{emp.phone || 'N/A'}</td>
+                  <td>
+                    <section className="action-row">
+                      <button type="button" className="btn btn-secondary compact-button" onClick={() => openEmployeeProfile(emp.id)}>
+                        Xem
+                      </button>
+                      {isAdmin && emp.id !== user?.id && (
+                        <button type="button" className="btn btn-secondary compact-button danger-text" onClick={() => handleDeactivateEmployee(emp)}>
+                          Khoa
+                        </button>
+                      )}
+                    </section>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </section>
+      )}
+
+      {selectedEmployee && (
+        <dialog open className="dialog" aria-labelledby="employee-dialog-title">
+          <header className="dialog-header">
+            <section>
+              <h2 id="employee-dialog-title">{selectedEmployee.full_name}</h2>
+              <p><code>{selectedEmployee.employee_code}</code> | {selectedEmployee.position || 'Nhan vien'}</p>
+            </section>
+            <button
+              type="button"
+              className="btn btn-secondary compact-button"
+              onClick={() => setSelectedEmployee(null)}
+              aria-label="Dong ho so nhan vien"
+            >
+              Dong
+            </button>
+          </header>
+
+          <dl className="detail-list">
+            <dt>Phong ban</dt>
+            <dd>{selectedEmployee.department?.name || 'Chua phan bo'}</dd>
+            <dt>Email</dt>
+            <dd><a href={`mailto:${selectedEmployee.email}`}>{selectedEmployee.email}</a></dd>
+            <dt>Dien thoai</dt>
+            <dd>{selectedEmployee.phone || 'Chua cap nhat'}</dd>
+            <dt>Vai tro</dt>
+            <dd>{selectedEmployee.role}</dd>
+            <dt>Ngay vao lam</dt>
+            <dd>{selectedEmployee.hire_date || 'Chua cap nhat'}</dd>
+            <dt>Trang thai</dt>
+            <dd><mark className="badge badge-approved">{selectedEmployee.status}</mark></dd>
+          </dl>
+        </dialog>
       )}
     </section>
   );

@@ -20,6 +20,7 @@ router.post(
   [
     body('code').trim().isLength({ min: 2, max: 20 }).withMessage('Ma phong ban tu 2 den 20 ky tu.'),
     body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Ten phong ban tu 2 den 100 ky tu.'),
+    body('manager_name').optional({ nullable: true }).trim().isLength({ max: 100 }).withMessage('Ten truong bo phan toi da 100 ky tu.'),
     body('description').optional({ nullable: true }).trim().isLength({ max: 1000 }).withMessage('Mo ta toi da 1000 ky tu.')
   ],
   validateRequest,
@@ -34,6 +35,7 @@ router.put(
     param('id').isInt({ min: 1 }).withMessage('Ma phong ban khong hop le.'),
     body('code').optional().trim().isLength({ min: 2, max: 20 }).withMessage('Ma phong ban tu 2 den 20 ky tu.'),
     body('name').optional().trim().isLength({ min: 2, max: 100 }).withMessage('Ten phong ban tu 2 den 100 ky tu.'),
+    body('manager_name').optional({ nullable: true }).trim().isLength({ max: 100 }).withMessage('Ten truong bo phan toi da 100 ky tu.'),
     body('description').optional({ nullable: true }).trim().isLength({ max: 1000 }).withMessage('Mo ta toi da 1000 ky tu.')
   ],
   validateRequest,

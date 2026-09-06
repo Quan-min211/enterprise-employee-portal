@@ -1,12 +1,15 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function Sidebar() {
+  const { user } = useAuth();
   const navItems = [
     { to: '/', label: 'Bang dieu khien', icon: 'DB' },
     { to: '/employees', label: 'Danh ba nhan vien', icon: 'NV' },
     { to: '/leaves', label: 'Don nghi phep & OT', icon: 'OT' },
     { to: '/announcements', label: 'Bang tin cong ty', icon: 'TB' },
+    ...(user?.role === 'admin' ? [{ to: '/departments', label: 'Quan tri phong ban', icon: 'PB' }] : []),
     { to: '/profile', label: 'Ho so ca nhan', icon: 'HS' }
   ];
 
