@@ -9,6 +9,7 @@ export default function Sidebar() {
     { to: '/employees', label: 'Danh ba nhan vien', icon: 'NV' },
     { to: '/leaves', label: 'Don nghi phep & OT', icon: 'OT' },
     { to: '/announcements', label: 'Bang tin cong ty', icon: 'TB' },
+    { to: '/internship-plan', label: 'Ke hoach thuc tap', icon: 'KH' },
     ...(user?.role === 'admin' ? [{ to: '/departments', label: 'Quan tri phong ban', icon: 'PB' }] : []),
     { to: '/profile', label: 'Ho so ca nhan', icon: 'HS' }
   ];

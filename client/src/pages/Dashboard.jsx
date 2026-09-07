@@ -25,6 +25,8 @@ export default function Dashboard() {
   }, []);
 
   const totalLeaveRequests = Object.values(stats.leaveStatus).reduce((sum, value) => sum + Number(value || 0), 0);
+  const processedLeaveRequests = Number(stats.leaveStatus.approved || 0) + Number(stats.leaveStatus.rejected || 0);
+  const approvalRate = totalLeaveRequests > 0 ? Math.round((processedLeaveRequests / totalLeaveRequests) * 100) : 0;
   const chartRows = [
     { key: 'pending', label: 'Cho duyet', value: stats.leaveStatus.pending, className: 'warning' },
     { key: 'approved', label: 'Da duyet', value: stats.leaveStatus.approved, className: 'success' },
@@ -35,9 +37,15 @@ export default function Dashboard() {
     <section aria-labelledby="dashboard-heading">
       <header className="page-header">
         <section>
+          <p className="eyebrow">Cong thong tin noi bo Fu Sheng</p>
           <h1 id="dashboard-heading">Tong Quan He Thong</h1>
           <p>Chao mung tro lai, <strong>{user?.full_name}</strong>. Day la tinh trang hoat dong noi bo hom nay.</p>
         </section>
+        <aside className="shift-brief" aria-label="Tom tat van hanh trong ngay">
+          <strong>Ca hanh chinh</strong>
+          <time dateTime={new Date().toISOString()}>{new Date().toLocaleDateString('vi-VN')}</time>
+          <p>{approvalRate}% don da duoc xu ly</p>
+        </aside>
       </header>
 
       <section className="metrics-grid" aria-label="Thong ke tom tat">
@@ -55,9 +63,32 @@ export default function Dashboard() {
           <h2>Phong Ban</h2>
           <p className="metric-value">{stats.totalDepartments}</p>
         </article>
+
+        <article className="metric-card">
+          <h2>Ty Le Xu Ly</h2>
+          <p className="metric-value">{approvalRate}%</p>
+        </article>
       </section>
 
       <section className="dashboard-grid" aria-label="Bang dieu hanh noi bo">
+        <section className="panel" aria-labelledby="internship-focus-heading">
+          <h2 id="internship-focus-heading">Trong Tam De Tai</h2>
+          <ol className="focus-list">
+            <li>
+              <strong>So hoa quy trinh noi bo</strong>
+              <p>Giam phu thuoc vao giay to va email roi rac cho nhan su nha may.</p>
+            </li>
+            <li>
+              <strong>Phan quyen ro rang</strong>
+              <p>Admin quan tri du lieu, manager phe duyet, employee tu phuc vu.</p>
+            </li>
+            <li>
+              <strong>San sang trien khai</strong>
+              <p>Docker Compose, MySQL va API rieng biet de chay tren mang noi bo.</p>
+            </li>
+          </ol>
+        </section>
+
         <section className="panel" aria-labelledby="leave-chart-heading">
           <h2 id="leave-chart-heading">Trang Thai Don Phep</h2>
           <section className="status-chart" aria-label="Bieu do tom tat don phep">
