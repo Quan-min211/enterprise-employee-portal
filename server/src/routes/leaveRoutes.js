@@ -28,7 +28,11 @@ router.post(
 router.get(
   '/',
   verifyToken,
-  [query('status').optional().isIn(['pending', 'approved', 'rejected']).withMessage('Trang thai khong hop le.')],
+  [
+    query('status').optional().isIn(['pending', 'approved', 'rejected']).withMessage('Trang thai khong hop le.'),
+    query('page').optional().isInt({ min: 1 }),
+    query('limit').optional().isInt({ min: 1, max: 50 })
+  ],
   validateRequest,
   getLeaveRequests
 );

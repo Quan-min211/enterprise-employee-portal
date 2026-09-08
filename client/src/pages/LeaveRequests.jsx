@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { leavesApi } from '../api/leavesApi';
 import { useAuth } from '../contexts/AuthContext';
+import Pagination from '../components/Pagination';
+import { useToast } from '../contexts/ToastContext';
 
 const leaveLabels = {
   annual: 'Phep nam',
@@ -15,6 +17,11 @@ export default function LeaveRequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [actionTarget, setActionTarget] = useState(null);
+  const [managerComment, setManagerComment] = useState('');
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState({ total: 0, totalPages: 1 });
+  const { pushToast } = useToast();
   const [formData, setFormData] = useState({
     request_type: 'leave',
     leave_type: 'annual',
@@ -23,13 +30,15 @@ export default function LeaveRequests() {
     reason: ''
   });
 
-  const fetchRequests = async () => {
+  const fetchRequests = async (nextPage = page) => {
     setLoading(true);
     try {
-      const res = await leavesApi.list();
+      const res = await leavesApi.list({ page: nextPage, limit: 10 });
       setRequests(res.requests || []);
+      setMeta({ total: res.total || 0, totalPages: res.totalPages || 1 });
+      setPage(res.page || nextPage);
     } catch (err) {
-      console.error('Error fetching leave requests:', err);
+      pushToast(err.message || 'Khong the tai danh sach don.', 'error');
     } finally {
       setLoading(false);
     }
@@ -47,17 +56,19 @@ export default function LeaveRequests() {
       setFormData({ request_type: 'leave', leave_type: 'annual', start_date: '', end_date: '', reason: '' });
       fetchRequests();
     } catch (err) {
-      alert(err.message || 'Loi khi gui don');
+      pushToast(err.message || 'Loi khi gui don.', 'error');
     }
   };
 
-  const handleAction = async (id, status) => {
-    const comment = window.prompt(`Ly do ${status === 'approved' ? 'duyet' : 'tu choi'}:`);
+  const handleAction = async () => {
     try {
-      await leavesApi.updateStatus(id, { status, manager_comment: comment });
-      fetchRequests();
+      await leavesApi.updateStatus(actionTarget.id, { status: actionTarget.status, manager_comment: managerComment || null });
+      setActionTarget(null);
+      setManagerComment('');
+      pushToast(actionTarget.status === 'approved' ? 'Da duyet don thanh cong.' : 'Da tu choi don thanh cong.', 'success');
+      fetchRequests(page);
     } catch (err) {
-      alert(err.message || 'Loi xu ly don');
+      pushToast(err.message || 'Loi xu ly don.', 'error');
     }
   };
 
@@ -164,6 +175,16 @@ export default function LeaveRequests() {
         </dialog>
       )}
 
+      {actionTarget && (
+        <dialog open className="dialog" aria-labelledby="leave-action-dialog-title">
+          <h2 id="leave-action-dialog-title">{actionTarget.status === 'approved' ? 'Duyet don' : 'Tu choi don'}</h2>
+          <p>Ghi chu xu ly cho {actionTarget.applicant?.full_name || 'nhan vien'}.</p>
+          <label htmlFor="manager-comment">Ghi chu</label>
+          <textarea id="manager-comment" rows={4} maxLength={1000} value={managerComment} onChange={(event) => setManagerComment(event.target.value)} />
+          <footer className="action-row"><button type="button" className="btn btn-secondary" onClick={() => setActionTarget(null)}>Huy</button><button type="button" className="btn btn-primary" onClick={handleAction}>Xac nhan</button></footer>
+        </dialog>
+      )}
+
       {loading ? (
         <p>Dang tai danh sach don...</p>
       ) : requests.length === 0 ? (
@@ -196,8 +217,8 @@ export default function LeaveRequests() {
                     <td>
                       {request.status === 'pending' ? (
                         <section className="action-row">
-                          <button type="button" onClick={() => handleAction(request.id, 'approved')} className="btn btn-primary compact-button">Duyet</button>
-                          <button type="button" onClick={() => handleAction(request.id, 'rejected')} className="btn btn-secondary compact-button danger-text">Tu choi</button>
+                          <button type="button" onClick={() => setActionTarget({ ...request, status: 'approved' })} className="btn btn-primary compact-button">Duyet</button>
+                          <button type="button" onClick={() => setActionTarget({ ...request, status: 'rejected' })} className="btn btn-secondary compact-button danger-text">Tu choi</button>
                         </section>
                       ) : (
                         <small className="muted">Da xu ly</small>
@@ -210,6 +231,7 @@ export default function LeaveRequests() {
           </table>
         </section>
       )}
+      <Pagination page={page} totalPages={meta.totalPages} total={meta.total} limit={10} onChange={fetchRequests} />
     </section>
   );
 }

@@ -12,6 +12,10 @@ const cookieOptions = {
 
 export const login = async (req, res, next) => {
   try {
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({ success: false, message: 'He thong chua cau hinh JWT_SECRET.' });
+    }
+
     const { email, password } = req.body;
 
     const user = await User.findOne({
@@ -30,7 +34,7 @@ export const login = async (req, res, next) => {
 
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role, name: user.full_name },
-      process.env.JWT_SECRET || 'change_this_jwt_secret_in_production',
+      process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
     );
 

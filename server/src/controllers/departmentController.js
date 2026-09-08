@@ -33,7 +33,12 @@ export const getDepartments = async (req, res, next) => {
 
 export const createDepartment = async (req, res, next) => {
   try {
-    const department = await Department.create(req.body);
+    const allowedFields = ['code', 'name', 'description', 'manager_name'];
+    const payload = allowedFields.reduce((acc, field) => {
+      if (req.body[field] !== undefined) acc[field] = req.body[field];
+      return acc;
+    }, {});
+    const department = await Department.create(payload);
 
     await writeAuditLog({
       userId: req.user.id,
@@ -61,14 +66,19 @@ export const updateDepartment = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Khong tim thay phong ban.' });
     }
 
-    await department.update(req.body);
+    const allowedFields = ['code', 'name', 'description', 'manager_name'];
+    const payload = allowedFields.reduce((acc, field) => {
+      if (req.body[field] !== undefined) acc[field] = req.body[field];
+      return acc;
+    }, {});
+    await department.update(payload);
 
     await writeAuditLog({
       userId: req.user.id,
       action: 'department.update',
       entityType: 'department',
       entityId: department.id,
-      details: req.body
+      details: payload
     });
 
     res.status(200).json({

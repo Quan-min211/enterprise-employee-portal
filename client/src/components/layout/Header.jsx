@@ -1,11 +1,12 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 
-export default function Header() {
+export default function Header({ onMenuToggle }) {
   const { user, logout } = useAuth();
 
   return (
     <header className="topbar">
+      <button type="button" className="menu-toggle" onClick={onMenuToggle} aria-label="Mo menu dieu huong">Menu</button>
       <section className="brand-row" aria-label="Nhan dien he thong">
         <strong className="brand-name">FU SHENG PORTAL</strong>
         <mark className="badge badge-normal">INTRANET</mark>

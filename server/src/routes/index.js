@@ -5,6 +5,7 @@ import leaveRoutes from './leaveRoutes.js';
 import announcementRoutes from './announcementRoutes.js';
 import departmentRoutes from './departmentRoutes.js';
 import dashboardRoutes from './dashboardRoutes.js';
+import auditLogRoutes from './auditLogRoutes.js';
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use('/leaves', leaveRoutes);
 router.use('/announcements', announcementRoutes);
 router.use('/departments', departmentRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/audit-logs', auditLogRoutes);
 
 export default router;

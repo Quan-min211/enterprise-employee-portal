@@ -78,7 +78,9 @@ export const getLeaveRequests = async (req, res, next) => {
       where.status = req.query.status;
     }
 
-    const requests = await LeaveRequest.findAll({
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 50);
+    const { count, rows: requests } = await LeaveRequest.findAndCountAll({
       where,
       include: [
         {
@@ -89,10 +91,12 @@ export const getLeaveRequests = async (req, res, next) => {
         },
         { model: User, as: 'approver', attributes: ['id', 'full_name'] }
       ],
-      order: [['created_at', 'DESC']]
+      order: [['created_at', 'DESC']],
+      limit,
+      offset: (page - 1) * limit
     });
 
-    res.status(200).json({ success: true, requests });
+    res.status(200).json({ success: true, total: count, page, totalPages: Math.ceil(count / limit), requests });
   } catch (error) {
     next(error);
   }

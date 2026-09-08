@@ -137,7 +137,7 @@ export const updateEmployee = async (req, res, next) => {
     ];
     const payload = allowedFields.reduce((acc, field) => {
       if (req.body[field] !== undefined) {
-        acc[field] = req.body[field] || null;
+        acc[field] = req.body[field] ?? null;
       }
       return acc;
     }, {});

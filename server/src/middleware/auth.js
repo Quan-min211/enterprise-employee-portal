@@ -8,7 +8,11 @@ export const verifyToken = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'change_this_jwt_secret_in_production');
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({ message: 'He thong chua cau hinh JWT_SECRET.' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
   } catch (error) {
