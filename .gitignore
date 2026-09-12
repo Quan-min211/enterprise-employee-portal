@@ -1,9 +1,16 @@
 # ============================================================
-# 🚫 AI Tools — không commit vào repo
+# 🚫 AI Tools & Skills — không commit vào repo
 # ============================================================
 spec-kit/
 taste-skill/
 impeccable/
+.agents/
+.specify/
+.gemini/
+.claude/
+.impeccable/
+specs/
+skills-lock.json
 
 # ============================================================
 # 📁 Thư mục thực tập — không push lên GitHub

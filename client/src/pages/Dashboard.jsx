@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     totalEmployees: 0,
     totalDepartments: 0,
@@ -12,140 +13,258 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
+    document.title = 'Tổng quan hệ thống | Fu Sheng Portal';
+
     const fetchDashboardData = async () => {
       try {
         const res = await dashboardApi.getSummary();
-        setStats(res.summary || stats);
+        if (res?.summary) {
+          setStats(res.summary);
+        }
       } catch (err) {
         console.error('Error loading dashboard stats:', err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchDashboardData();
   }, []);
 
-  const totalLeaveRequests = Object.values(stats.leaveStatus).reduce((sum, value) => sum + Number(value || 0), 0);
-  const processedLeaveRequests = Number(stats.leaveStatus.approved || 0) + Number(stats.leaveStatus.rejected || 0);
-  const approvalRate = totalLeaveRequests > 0 ? Math.round((processedLeaveRequests / totalLeaveRequests) * 100) : 0;
+  const totalLeaveRequests = Object.values(stats.leaveStatus).reduce(
+    (sum, value) => sum + Number(value || 0),
+    0
+  );
+  const processedLeaveRequests =
+    Number(stats.leaveStatus.approved || 0) + Number(stats.leaveStatus.rejected || 0);
+  const approvalRate =
+    totalLeaveRequests > 0 ? Math.round((processedLeaveRequests / totalLeaveRequests) * 100) : 0;
+
   const chartRows = [
-    { key: 'pending', label: 'Cho duyet', value: stats.leaveStatus.pending, className: 'warning' },
-    { key: 'approved', label: 'Da duyet', value: stats.leaveStatus.approved, className: 'success' },
-    { key: 'rejected', label: 'Tu choi', value: stats.leaveStatus.rejected, className: 'danger' }
+    { key: 'pending', label: 'Chờ duyệt', value: stats.leaveStatus.pending, className: 'warning' },
+    { key: 'approved', label: 'Đã duyệt', value: stats.leaveStatus.approved, className: 'success' },
+    { key: 'rejected', label: 'Từ chối', value: stats.leaveStatus.rejected, className: 'danger' }
   ];
+
+  const todayFormatted = new Date().toLocaleDateString('vi-VN', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 
   return (
     <section aria-labelledby="dashboard-heading">
       <header className="page-header">
         <section>
-          <p className="eyebrow">Cong thong tin noi bo Fu Sheng</p>
-          <h1 id="dashboard-heading">Tong Quan He Thong</h1>
-          <p>Chao mung tro lai, <strong>{user?.full_name}</strong>. Day la tinh trang hoat dong noi bo hom nay.</p>
+          <p className="eyebrow">Cổng thông tin nội bộ Fu Sheng</p>
+          <h1 id="dashboard-heading">Tổng Quan Hệ Thống</h1>
+          <p>
+            Chào mừng trở lại, <strong>{user?.full_name || 'Cán bộ / Nhân viên'}</strong>. Đây là tổng hợp hoạt động vận hành hôm nay.
+          </p>
         </section>
-        <aside className="shift-brief" aria-label="Tom tat van hanh trong ngay">
-          <strong>Ca hanh chinh</strong>
-          <time dateTime={new Date().toISOString()}>{new Date().toLocaleDateString('vi-VN')}</time>
-          <p>{approvalRate}% don da duoc xu ly</p>
+        <aside className="shift-brief" aria-label="Tóm tắt ca vận hành">
+          <header>
+            <strong>Ca hành chính</strong>
+            <time dateTime={new Date().toISOString().split('T')[0]}>{todayFormatted}</time>
+          </header>
+          <data value={approvalRate} className="shift-stat">
+            <strong>{approvalRate}%</strong> đơn đã xử lý
+          </data>
         </aside>
       </header>
 
-      <section className="metrics-grid" aria-label="Thong ke tom tat">
+      {/* Metric summary cards */}
+      <section className="metrics-grid" aria-label="Thống kê tổng hợp">
         <article className="metric-card">
-          <h2>Tong Nhan Vien</h2>
-          <p className="metric-value">{stats.totalEmployees}</p>
+          <header>
+            <h2>Tổng Nhân Sự</h2>
+            <data value="active" className="badge badge-accent">Hoạt động</data>
+          </header>
+          {isLoading ? (
+            <p className="skeleton skeleton-title" aria-hidden="true"></p>
+          ) : (
+            <data value={stats.totalEmployees} className="metric-value">
+              {stats.totalEmployees}
+            </data>
+          )}
+          <p className="metric-caption">Toàn bộ nhà máy</p>
         </article>
 
         <article className="metric-card warning">
-          <h2>Don Cho Duyet</h2>
-          <p className="metric-value">{stats.leaveStatus.pending}</p>
+          <header>
+            <h2>Đơn Chờ Duyệt</h2>
+            <data value="pending" className="badge badge-warning">Cần xử lý</data>
+          </header>
+          {isLoading ? (
+            <p className="skeleton skeleton-title" aria-hidden="true"></p>
+          ) : (
+            <data value={stats.leaveStatus.pending} className="metric-value">
+              {stats.leaveStatus.pending}
+            </data>
+          )}
+          <p className="metric-caption">Nghỉ phép & tăng ca</p>
         </article>
 
         <article className="metric-card success">
-          <h2>Phong Ban</h2>
-          <p className="metric-value">{stats.totalDepartments}</p>
+          <header>
+            <h2>Phòng Ban</h2>
+            <data value="active" className="badge badge-success">Bộ phận</data>
+          </header>
+          {isLoading ? (
+            <p className="skeleton skeleton-title" aria-hidden="true"></p>
+          ) : (
+            <data value={stats.totalDepartments} className="metric-value">
+              {stats.totalDepartments}
+            </data>
+          )}
+          <p className="metric-caption">Cơ cấu tổ chức</p>
         </article>
 
         <article className="metric-card">
-          <h2>Ty Le Xu Ly</h2>
-          <p className="metric-value">{approvalRate}%</p>
+          <header>
+            <h2>Tỷ Lệ Xử Lý</h2>
+            <data value={approvalRate} className="badge badge-accent">Hiệu suất</data>
+          </header>
+          {isLoading ? (
+            <p className="skeleton skeleton-title" aria-hidden="true"></p>
+          ) : (
+            <data value={approvalRate} className="metric-value">
+              {approvalRate}%
+            </data>
+          )}
+          <p className="metric-caption">{processedLeaveRequests}/{totalLeaveRequests} đơn hoàn tất</p>
         </article>
       </section>
 
-      <section className="dashboard-grid" aria-label="Bang dieu hanh noi bo">
-        <section className="panel" aria-labelledby="internship-focus-heading">
-          <h2 id="internship-focus-heading">Trong Tam De Tai</h2>
-          <ol className="focus-list">
-            <li>
-              <strong>So hoa quy trinh noi bo</strong>
-              <p>Giam phu thuoc vao giay to va email roi rac cho nhan su nha may.</p>
-            </li>
-            <li>
-              <strong>Phan quyen ro rang</strong>
-              <p>Admin quan tri du lieu, manager phe duyet, employee tu phuc vu.</p>
-            </li>
-            <li>
-              <strong>San sang trien khai</strong>
-              <p>Docker Compose, MySQL va API rieng biet de chay tren mang noi bo.</p>
-            </li>
-          </ol>
-        </section>
-
+      {/* Main dashboard panels (2-column bento grid) */}
+      <section className="dashboard-grid" aria-label="Bảng điều hành chi tiết">
+        {/* Panel 1: Status Chart */}
         <section className="panel" aria-labelledby="leave-chart-heading">
-          <h2 id="leave-chart-heading">Trang Thai Don Phep</h2>
-          <section className="status-chart" aria-label="Bieu do tom tat don phep">
+          <header className="panel-header">
+            <h2 id="leave-chart-heading">Trạng Thái Đơn Phép</h2>
+            <data value={totalLeaveRequests} className="badge badge-subtle">
+              {totalLeaveRequests} đơn tổng cộng
+            </data>
+          </header>
+          <figure className="status-chart" role="figure" aria-label="Biểu đồ trạng thái đơn nghỉ phép">
+            <figcaption className="sr-only">Biểu đồ phân bố đơn phép theo trạng thái xử lý</figcaption>
             {chartRows.map((row) => {
-              const width = totalLeaveRequests > 0 ? Math.max((row.value / totalLeaveRequests) * 100, row.value > 0 ? 8 : 0) : 0;
+              const width =
+                totalLeaveRequests > 0
+                  ? Math.max((row.value / totalLeaveRequests) * 100, row.value > 0 ? 8 : 0)
+                  : 0;
 
               return (
                 <article className="chart-row" key={row.key}>
                   <header>
                     <strong>{row.label}</strong>
-                    <data value={row.value}>{row.value}</data>
+                    <data value={row.value} className="chart-count">
+                      {row.value} đơn ({totalLeaveRequests > 0 ? Math.round((row.value / totalLeaveRequests) * 100) : 0}%)
+                    </data>
                   </header>
-                  <meter min="0" max="100" value={width} className={row.className}>
+                  <meter
+                    min="0"
+                    max="100"
+                    value={width}
+                    className={row.className}
+                    aria-label={`${row.label}: ${row.value} đơn`}
+                  >
                     {Math.round(width)}%
                   </meter>
                 </article>
               );
             })}
-          </section>
+          </figure>
         </section>
 
-        <section className="panel" aria-labelledby="ops-heading">
-          <h2 id="ops-heading">Van Hanh He Thong</h2>
-          <dl className="ops-list">
-            <dt>RBAC</dt>
-            <dd>Admin, Manager, Employee</dd>
-            <dt>Auth</dt>
-            <dd>JWT HttpOnly Cookie</dd>
-            <dt>Database</dt>
-            <dd>MySQL 8 + Sequelize</dd>
-            <dt>Deployment</dt>
-            <dd>Docker Compose ready</dd>
-          </dl>
-        </section>
-
+        {/* Panel 2: Recent Announcements */}
         <section className="panel" aria-labelledby="announcements-heading">
-          <h2 id="announcements-heading">Thong Bao Moi Nhat</h2>
-          {stats.recentAnnouncements.length === 0 ? (
-            <p className="muted">Chua co thong bao moi.</p>
+          <header className="panel-header">
+            <h2 id="announcements-heading">Thông Báo Mới Nhất</h2>
+            <data value={stats.recentAnnouncements.length} className="badge badge-subtle">
+              {stats.recentAnnouncements.length} tin
+            </data>
+          </header>
+          {isLoading ? (
+            <section className="stack" aria-hidden="true">
+              <p className="skeleton skeleton-card"></p>
+              <p className="skeleton skeleton-card"></p>
+            </section>
+          ) : stats.recentAnnouncements.length === 0 ? (
+            <figure className="empty-state" role="status">
+              <figcaption>
+                <strong className="empty-title">Không có thông báo mới</strong>
+                <p className="muted">Tất cả thông báo vận hành sẽ được cập nhật tại đây.</p>
+              </figcaption>
+            </figure>
           ) : (
-            <section className="stack" aria-label="Danh sach thong bao moi nhat">
-              {stats.recentAnnouncements.map((ann) => (
-                <article key={ann.id} className={`announcement-card ${ann.priority}`}>
-                  <header>
-                    <section>
-                      <h3>{ann.title}</h3>
-                      <time dateTime={ann.createdAt}>
-                        {new Date(ann.createdAt).toLocaleDateString('vi-VN')}
-                      </time>
-                    </section>
-                    <mark className={`badge badge-${ann.priority}`}>{ann.priority}</mark>
-                  </header>
-                  <p>{ann.content}</p>
-                </article>
-              ))}
+            <section className="stack" aria-label="Danh sách thông báo mới">
+              {stats.recentAnnouncements.map((ann) => {
+                const priorityLabels = {
+                  urgent: 'Khẩn cấp',
+                  important: 'Quan trọng',
+                  normal: 'Thông thường'
+                };
+                return (
+                  <article key={ann.id} className={`announcement-card ${ann.priority}`}>
+                    <header>
+                      <section>
+                        <h3>{ann.title}</h3>
+                        <time dateTime={ann.createdAt}>
+                          {new Date(ann.createdAt).toLocaleDateString('vi-VN')}
+                        </time>
+                      </section>
+                      <data value={ann.priority} className={`badge badge-${ann.priority}`}>
+                        {priorityLabels[ann.priority] || ann.priority}
+                      </data>
+                    </header>
+                    <p>{ann.content}</p>
+                  </article>
+                );
+              })}
             </section>
           )}
+        </section>
+
+        {/* Panel 3: Internship Focus */}
+        <section className="panel" aria-labelledby="internship-focus-heading">
+          <header className="panel-header">
+            <h2 id="internship-focus-heading">Trọng Tâm Đề Tài</h2>
+            <data value="scope" className="badge badge-accent">Mục tiêu</data>
+          </header>
+          <ol className="focus-list">
+            <li>
+              <strong>Số hóa quy trình nhân sự nhà máy</strong>
+              <p>Loại bỏ phiếu giấy và luồng xử lý email thủ công, tập trung dữ liệu minh bạch.</p>
+            </li>
+            <li>
+              <strong>Phân quyền chặt chẽ theo vai trò (RBAC)</strong>
+              <p>Admin quản trị danh mục, Quản lý duyệt cấp tốc, Nhân viên theo dõi trực tuyến.</p>
+            </li>
+            <li>
+              <strong>Kiến trúc sẵn sàng môi trường sản xuất</strong>
+              <p>Đóng gói Docker Compose, bảo mật HttpOnly Cookie và tối ưu hóa hiệu năng MySQL 8.</p>
+            </li>
+          </ol>
+        </section>
+
+        {/* Panel 4: System Operations */}
+        <section className="panel" aria-labelledby="ops-heading">
+          <header className="panel-header">
+            <h2 id="ops-heading">Vận Hành Kỹ Thuật</h2>
+            <data value="online" className="badge badge-success">Online</data>
+          </header>
+          <dl className="ops-list">
+            <dt>Cơ chế phân quyền</dt>
+            <dd>RBAC (Admin, Quản lý, Nhân viên)</dd>
+            <dt>Xác thực bảo mật</dt>
+            <dd>JWT HttpOnly Cookie (Chống XSS/CSRF)</dd>
+            <dt>Hệ quản trị CSDL</dt>
+            <dd>MySQL 8.0 + Sequelize ORM (utf8mb4)</dd>
+            <dt>Hạ tầng triển khai</dt>
+            <dd>Docker Compose (Nginx + Node.js 20)</dd>
+          </dl>
         </section>
       </section>
     </section>
