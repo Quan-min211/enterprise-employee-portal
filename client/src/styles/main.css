@@ -1041,6 +1041,34 @@ figure.status-chart,
   gap: var(--space-3);
 }
 
+.employee-skeleton-table {
+  table-layout: fixed;
+}
+
+.employee-skeleton-table td {
+  height: 52px;
+}
+
+.employee-skeleton-line {
+  width: 78%;
+  height: 14px;
+}
+
+.employee-skeleton-table td:nth-child(2) .employee-skeleton-line,
+.employee-skeleton-table td:nth-child(5) .employee-skeleton-line {
+  width: 92%;
+}
+
+.dialog-wide {
+  width: min(94vw, 920px);
+  max-height: min(88vh, 860px);
+  overflow-y: auto;
+}
+
+.dialog-wide .employee-form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .department-list {
   display: grid;
   gap: var(--space-3);
@@ -1130,6 +1158,7 @@ figure.status-chart,
   .search-form,
   .form-grid,
   .employee-form-grid,
+  .dialog-wide .employee-form-grid,
   .profile-grid,
   .admin-grid,
   .dashboard-grid,
