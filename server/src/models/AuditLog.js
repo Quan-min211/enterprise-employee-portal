@@ -24,5 +24,10 @@ export const AuditLog = sequelize.define('AuditLog', {
     allowNull: true
   }
 }, {
-  tableName: 'audit_logs'
+  tableName: 'audit_logs',
+  indexes: [
+    { fields: ['action'], name: 'idx_auditlog_action' },
+    { fields: ['created_at'], name: 'idx_auditlog_created_at' },
+    { fields: ['user_id'], name: 'idx_auditlog_user_id' }
+  ]
 });

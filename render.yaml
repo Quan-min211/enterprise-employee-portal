@@ -1,0 +1,34 @@
+services:
+  # Backend Express API Service
+  - type: web
+    name: eep-backend-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: server
+    buildCommand: npm install --omit=dev
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DB_SYNC
+        value: "true"
+      - key: DB_SYNC_ALTER
+        value: "true"
+      - key: DB_SEED
+        value: "true"
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: DB_SSL
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      # Set CLIENT_URL to your Vercel/Netlify frontend URL (e.g. https://fu-sheng-portal.vercel.app)
+      - key: CLIENT_URL
+        sync: false
+      # Paste your TiDB Cloud / Aiven MySQL connection string here
+      - key: DATABASE_URL
+        sync: false

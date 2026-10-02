@@ -1,30 +1,26 @@
-import { Department, User } from '../models/index.js';
+import { sequelize } from '../config/database.js';
+import { Department } from '../models/index.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 
 export const getDepartments = async (req, res, next) => {
   try {
     const departments = await Department.findAll({
-      include: [
-        {
-          model: User,
-          as: 'employees',
-          attributes: ['id'],
-          required: false
-        }
-      ],
+      attributes: {
+        include: [
+          [
+            sequelize.literal(
+              '(SELECT COUNT(*) FROM users WHERE users.department_id = Department.id AND users.status = \'active\')'
+            ),
+            'employee_count'
+          ]
+        ]
+      },
       order: [['name', 'ASC']]
     });
 
     res.status(200).json({
       success: true,
-      departments: departments.map((department) => {
-        const { employees = [], ...departmentData } = department.toJSON();
-
-        return {
-          ...departmentData,
-          employee_count: employees.length
-        };
-      })
+      departments: departments.map((d) => d.toJSON())
     });
   } catch (error) {
     next(error);

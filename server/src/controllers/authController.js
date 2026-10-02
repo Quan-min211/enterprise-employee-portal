@@ -3,12 +3,16 @@ import jwt from 'jsonwebtoken';
 import { User, Department } from '../models/index.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 
+const isProduction = process.env.NODE_ENV === 'production';
+const sameSiteSetting = process.env.COOKIE_SAME_SITE || 'lax';
+
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
+  secure: isProduction || sameSiteSetting === 'none',
   maxAge: 8 * 60 * 60 * 1000,
-  sameSite: 'lax'
+  sameSite: sameSiteSetting
 };
+
 
 export const login = async (req, res, next) => {
   try {

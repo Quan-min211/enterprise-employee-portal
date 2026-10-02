@@ -54,5 +54,10 @@ export const User = sequelize.define('User', {
     defaultValue: 'active'
   }
 }, {
-  tableName: 'users'
+  tableName: 'users',
+  indexes: [
+    { fields: ['department_id', 'status'], name: 'idx_users_dept_status' },
+    { fields: ['role'], name: 'idx_users_role' },
+    { fields: ['status'], name: 'idx_users_status' }
+  ]
 });
