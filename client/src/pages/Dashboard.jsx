@@ -1,6 +1,27 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { dashboardApi } from '../api/dashboardApi';
 import { useAuth } from '../contexts/AuthContext';
+
+const leaveLabels = {
+  annual: 'Phép năm',
+  sick: 'Nghỉ ốm',
+  unpaid: 'Nghỉ không lương',
+  overtime: 'Làm thêm giờ (OT)',
+  other: 'Khác'
+};
+
+const statusLabels = {
+  pending: 'Chờ duyệt',
+  approved: 'Đã duyệt',
+  rejected: 'Từ chối'
+};
+
+const roleLabels = {
+  admin: 'Quản trị viên',
+  manager: 'Quản lý bộ phận',
+  employee: 'Nhân viên'
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -9,8 +30,13 @@ export default function Dashboard() {
     totalEmployees: 0,
     totalDepartments: 0,
     leaveStatus: { pending: 0, approved: 0, rejected: 0 },
-    recentAnnouncements: []
+    recentAnnouncements: [],
+    recentLeaves: [],
+    pendingActionItems: [],
+    departmentLoad: []
   });
+
+  const isManager = user?.role === 'admin' || user?.role === 'manager';
 
   useEffect(() => {
     document.title = 'Tổng quan hệ thống | Fu Sheng Portal';
@@ -60,7 +86,8 @@ export default function Dashboard() {
           <p className="eyebrow">Cổng thông tin nội bộ Fu Sheng</p>
           <h1 id="dashboard-heading">Tổng Quan Hệ Thống</h1>
           <p>
-            Chào mừng trở lại, <strong>{user?.full_name || 'Cán bộ / Nhân viên'}</strong>. Đây là tổng hợp hoạt động vận hành hôm nay.
+            Chào mừng trở lại, <strong>{user?.full_name || 'Cán bộ / Nhân viên'}</strong>.
+            Vai trò: <mark className="badge badge-accent">{roleLabels[user?.role] || user?.role}</mark>
           </p>
         </section>
         <aside className="shift-brief" aria-label="Tóm tắt ca vận hành">
@@ -69,10 +96,34 @@ export default function Dashboard() {
             <time dateTime={new Date().toISOString().split('T')[0]}>{todayFormatted}</time>
           </header>
           <data value={approvalRate} className="shift-stat">
-            <strong>{approvalRate}%</strong> đơn đã xử lý
+            <strong>{approvalRate}%</strong> đơn đã xử lý ({processedLeaveRequests}/{totalLeaveRequests})
           </data>
         </aside>
       </header>
+
+      {/* Quick Actions Bar */}
+      <nav className="quick-actions-grid" aria-label="Lối tắt thao tác nhanh">
+        <Link to="/leaves" className="quick-action-link">
+          <strong>📝 Đăng Ký Đơn Mới</strong>
+          <small>Nộp đề xuất nghỉ phép hoặc làm thêm giờ trực tuyến</small>
+        </Link>
+        <Link to="/employees" className="quick-action-link">
+          <strong>👥 Tra Cứu Danh Bạ</strong>
+          <small>Tìm kiếm danh bạ nhân sự và thông tin liên lạc</small>
+        </Link>
+        {isManager && (
+          <Link to="/leaves" className="quick-action-link highlight">
+            <strong>⚡ Duyệt Đơn Chờ ({stats.leaveStatus.pending})</strong>
+            <small>Xử lý cấp tốc các yêu cầu nghỉ phép đang chờ phê duyệt</small>
+          </Link>
+        )}
+        {isManager && (
+          <Link to="/leaves" className="quick-action-link">
+            <strong>📊 Xuất Báo Cáo CSV</strong>
+            <small>Lọc dữ liệu và trích xuất báo cáo nhân sự theo thời gian</small>
+          </Link>
+        )}
+      </nav>
 
       {/* Metric summary cards */}
       <section className="metrics-grid" aria-label="Thống kê tổng hợp">
@@ -139,7 +190,63 @@ export default function Dashboard() {
 
       {/* Main dashboard panels (2-column bento grid) */}
       <section className="dashboard-grid" aria-label="Bảng điều hành chi tiết">
-        {/* Panel 1: Status Chart */}
+        {/* Panel 1: Pending Action Items */}
+        <section className="panel" aria-labelledby="action-items-heading">
+          <header className="panel-header">
+            <h2 id="action-items-heading">
+              {isManager ? 'Đơn Cần Duyệt Gấp' : 'Đơn Chờ Của Bạn'}
+            </h2>
+            <data value={stats.pendingActionItems?.length || 0} className="badge badge-warning">
+              {stats.pendingActionItems?.length || 0} đơn
+            </data>
+          </header>
+          {isLoading ? (
+            <section className="stack" aria-hidden="true">
+              <p className="skeleton skeleton-card"></p>
+              <p className="skeleton skeleton-card"></p>
+            </section>
+          ) : (stats.pendingActionItems?.length || 0) === 0 ? (
+            <figure className="empty-state" role="status">
+              <figcaption>
+                <strong className="empty-title">Không có đơn chờ xử lý</strong>
+                <p className="muted">
+                  {isManager
+                    ? 'Tuyệt vời! Tất cả đơn nghỉ phép và tăng ca đã được giải quyết.'
+                    : 'Bạn hiện không có đơn nào đang chờ duyệt.'}
+                </p>
+              </figcaption>
+            </figure>
+          ) : (
+            <section className="stack" aria-label="Danh sách đơn cần xử lý">
+              {stats.pendingActionItems.map((item) => (
+                <article key={item.id} className="action-item-card">
+                  <header>
+                    <section>
+                      <strong>{item.applicant?.full_name || 'Nhân viên'}</strong>
+                      <small className="muted"> ({item.applicant?.employee_code || `#${item.id}`})</small>
+                    </section>
+                    <mark className="badge badge-pending">Chờ duyệt</mark>
+                  </header>
+                  <p className="action-item-desc">
+                    <strong>{item.request_type === 'overtime' ? 'Tăng ca' : leaveLabels[item.leave_type] || item.leave_type}:</strong>{' '}
+                    {item.reason}
+                  </p>
+                  <footer>
+                    <small className="muted">
+                      Từ <time dateTime={item.start_date}>{item.start_date}</time> đến{' '}
+                      <time dateTime={item.end_date}>{item.end_date}</time> ({Number(item.day_count || 0)} ngày)
+                    </small>
+                    <Link to="/leaves" className="btn btn-primary compact-button">
+                      {isManager ? 'Xử lý ngay' : 'Xem chi tiết'}
+                    </Link>
+                  </footer>
+                </article>
+              ))}
+            </section>
+          )}
+        </section>
+
+        {/* Panel 2: Status Chart */}
         <section className="panel" aria-labelledby="leave-chart-heading">
           <header className="panel-header">
             <h2 id="leave-chart-heading">Trạng Thái Đơn Phép</h2>
@@ -178,7 +285,68 @@ export default function Dashboard() {
           </figure>
         </section>
 
-        {/* Panel 2: Recent Announcements */}
+        {/* Panel 3: Recent Leave Requests */}
+        <section className="panel" aria-labelledby="recent-leaves-heading">
+          <header className="panel-header">
+            <h2 id="recent-leaves-heading">Đơn Gần Đây</h2>
+            <Link to="/leaves" className="badge badge-accent">
+              Xem tất cả →
+            </Link>
+          </header>
+          {isLoading ? (
+            <section className="stack" aria-hidden="true">
+              <p className="skeleton skeleton-card"></p>
+              <p className="skeleton skeleton-card"></p>
+            </section>
+          ) : (stats.recentLeaves?.length || 0) === 0 ? (
+            <figure className="empty-state" role="status">
+              <figcaption>
+                <strong className="empty-title">Chưa có đơn nào gần đây</strong>
+                <p className="muted">Lịch sử gửi đơn mới sẽ được hiển thị tại đây.</p>
+              </figcaption>
+            </figure>
+          ) : (
+            <section className="table-shell" aria-label="Bảng các đơn gần đây">
+              <table>
+                <caption className="visually-hidden">Danh sách đơn gần đây</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Người nộp</th>
+                    <th scope="col">Loại</th>
+                    <th scope="col">Thời gian</th>
+                    <th scope="col">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.recentLeaves.map((req) => (
+                    <tr key={req.id}>
+                      <td>
+                        <strong>{req.applicant?.full_name || 'N/A'}</strong>
+                        <br />
+                        <small className="muted">{req.applicant?.department?.name || 'Nhà máy'}</small>
+                      </td>
+                      <td>
+                        <small>
+                          {req.request_type === 'overtime' ? 'Tăng ca' : leaveLabels[req.leave_type] || req.leave_type}
+                        </small>
+                      </td>
+                      <td>
+                        <small>{req.start_date}</small>
+                      </td>
+                      <td>
+                        <mark className={`badge badge-${req.status}`}>
+                          {statusLabels[req.status] || req.status}
+                        </mark>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
+        </section>
+
+        {/* Panel 4: Recent Announcements */}
         <section className="panel" aria-labelledby="announcements-heading">
           <header className="panel-header">
             <h2 id="announcements-heading">Thông Báo Mới Nhất</h2>
@@ -227,29 +395,37 @@ export default function Dashboard() {
           )}
         </section>
 
-        {/* Panel 3: Internship Focus */}
-        <section className="panel" aria-labelledby="internship-focus-heading">
-          <header className="panel-header">
-            <h2 id="internship-focus-heading">Trọng Tâm Đề Tài</h2>
-            <data value="scope" className="badge badge-accent">Mục tiêu</data>
-          </header>
-          <ol className="focus-list">
-            <li>
-              <strong>Số hóa quy trình nhân sự nhà máy</strong>
-              <p>Loại bỏ phiếu giấy và luồng xử lý email thủ công, tập trung dữ liệu minh bạch.</p>
-            </li>
-            <li>
-              <strong>Phân quyền chặt chẽ theo vai trò (RBAC)</strong>
-              <p>Admin quản trị danh mục, Quản lý duyệt cấp tốc, Nhân viên theo dõi trực tuyến.</p>
-            </li>
-            <li>
-              <strong>Kiến trúc sẵn sàng môi trường sản xuất</strong>
-              <p>Đóng gói Docker Compose, bảo mật HttpOnly Cookie và tối ưu hóa hiệu năng MySQL 8.</p>
-            </li>
-          </ol>
-        </section>
+        {/* Panel 5: Department Load Distribution */}
+        {stats.departmentLoad?.length > 0 && (
+          <section className="panel" aria-labelledby="dept-load-heading">
+            <header className="panel-header">
+              <h2 id="dept-load-heading">Phân Bổ Theo Bộ Phận</h2>
+              <data value={stats.departmentLoad.length} className="badge badge-subtle">
+                {stats.departmentLoad.length} bộ phận
+              </data>
+            </header>
+            <section className="stack" aria-label="Thống kê khối lượng đơn theo bộ phận">
+              {stats.departmentLoad.map((item) => (
+                <article key={item.department} className="dept-load-row">
+                  <header>
+                    <strong>{item.department}</strong>
+                    <data value={item.total}>{item.total} đơn</data>
+                  </header>
+                  <meter
+                    min="0"
+                    max={Math.max(...stats.departmentLoad.map((d) => d.total), 1)}
+                    value={item.total}
+                    aria-label={`${item.department}: ${item.total} đơn`}
+                  >
+                    {item.total}
+                  </meter>
+                </article>
+              ))}
+            </section>
+          </section>
+        )}
 
-        {/* Panel 4: System Operations */}
+        {/* Panel 6: System Operations */}
         <section className="panel" aria-labelledby="ops-heading">
           <header className="panel-header">
             <h2 id="ops-heading">Vận Hành Kỹ Thuật</h2>
@@ -262,8 +438,8 @@ export default function Dashboard() {
             <dd>JWT HttpOnly Cookie (Chống XSS/CSRF)</dd>
             <dt>Hệ quản trị CSDL</dt>
             <dd>MySQL 8.0 + Sequelize ORM (utf8mb4)</dd>
-            <dt>Hạ tầng triển khai</dt>
-            <dd>Docker Compose (Nginx + Node.js 20)</dd>
+            <dt>Xuất dữ liệu</dt>
+            <dd>Báo cáo CSV UTF-8 kèm ký tự BOM Excel</dd>
           </dl>
         </section>
       </section>

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { body, param, query } from 'express-validator';
 import {
   createLeaveRequest,
+  exportLeaveRequests,
   getLeaveRequests,
   getLeaveStats,
   updateLeaveStatus
@@ -30,11 +31,34 @@ router.get(
   verifyToken,
   [
     query('status').optional().isIn(['pending', 'approved', 'rejected']).withMessage('Trang thai khong hop le.'),
+    query('request_type').optional().isIn(['leave', 'overtime']).withMessage('Nhom yeu cau khong hop le.'),
+    query('leave_type').optional().isIn(['annual', 'sick', 'unpaid', 'overtime', 'other']).withMessage('Loai phep khong hop le.'),
+    query('department_id').optional().isInt({ min: 1 }).withMessage('Phong ban khong hop le.'),
+    query('user_id').optional().isInt({ min: 1 }).withMessage('Nhan vien khong hop le.'),
+    query('date_from').optional().isISO8601().withMessage('Ngay bat dau loc khong hop le.'),
+    query('date_to').optional().isISO8601().withMessage('Ngay ket thuc loc khong hop le.'),
     query('page').optional().isInt({ min: 1 }),
     query('limit').optional().isInt({ min: 1, max: 50 })
   ],
   validateRequest,
   getLeaveRequests
+);
+
+router.get(
+  '/export',
+  verifyToken,
+  checkRole(['admin', 'manager']),
+  [
+    query('status').optional().isIn(['pending', 'approved', 'rejected']).withMessage('Trang thai khong hop le.'),
+    query('request_type').optional().isIn(['leave', 'overtime']).withMessage('Nhom yeu cau khong hop le.'),
+    query('leave_type').optional().isIn(['annual', 'sick', 'unpaid', 'overtime', 'other']).withMessage('Loai phep khong hop le.'),
+    query('department_id').optional().isInt({ min: 1 }).withMessage('Phong ban khong hop le.'),
+    query('user_id').optional().isInt({ min: 1 }).withMessage('Nhan vien khong hop le.'),
+    query('date_from').optional().isISO8601().withMessage('Ngay bat dau loc khong hop le.'),
+    query('date_to').optional().isISO8601().withMessage('Ngay ket thuc loc khong hop le.')
+  ],
+  validateRequest,
+  exportLeaveRequests
 );
 
 router.get(
