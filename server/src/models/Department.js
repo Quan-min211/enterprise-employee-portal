@@ -24,6 +24,8 @@ export const Department = sequelize.define('Department', {
     type: DataTypes.STRING(100),
     allowNull: true
   }
+  // manager_id FK is defined via association in models/index.js (added in migration 002)
 }, {
   tableName: 'departments'
 });
+

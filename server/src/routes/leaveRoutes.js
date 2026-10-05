@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { body, param, query } from 'express-validator';
 import {
+  cancelLeaveRequest,
   createLeaveRequest,
   exportLeaveRequests,
   getLeaveRequests,
@@ -11,6 +12,7 @@ import { verifyToken, checkRole } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validateRequest.js';
 
 const router = Router();
+
 
 router.post(
   '/',
@@ -82,4 +84,16 @@ router.patch(
   updateLeaveStatus
 );
 
+// Nhân viên hủy đơn của chính mình khi còn pending
+router.patch(
+  '/:id/cancel',
+  verifyToken,
+  [
+    param('id').isInt({ min: 1 }).withMessage('Ma don khong hop le.')
+  ],
+  validateRequest,
+  cancelLeaveRequest
+);
+
 export default router;
+

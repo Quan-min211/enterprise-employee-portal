@@ -34,8 +34,15 @@ export const LeaveRequest = sequelize.define('LeaveRequest', {
     defaultValue: 1,
     allowNull: false
   },
+  // Só giờ làm thêm — chỉ dùng cho đơn OT (request_type = 'overtime')
+  ot_hours: {
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: true,
+    defaultValue: null
+  },
   status: {
-    type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+    // 'cancelled' added in migration 002
+    type: DataTypes.ENUM('pending', 'approved', 'rejected', 'cancelled'),
     defaultValue: 'pending',
     allowNull: false
   },
@@ -51,3 +58,4 @@ export const LeaveRequest = sequelize.define('LeaveRequest', {
     { fields: ['status'], name: 'idx_leaves_status' }
   ]
 });
+

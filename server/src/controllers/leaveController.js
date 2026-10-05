@@ -1,21 +1,11 @@
 import { Op } from 'sequelize';
-import { Department, LeaveRequest, User } from '../models/index.js';
+import { Department, Holiday, LeaveApprovalLog, LeaveRequest, User } from '../models/index.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 
 const csvHeaders = [
-  'Ma don',
-  'Nguoi nop',
-  'Ma nhan vien',
-  'Phong ban',
-  'Nhom yeu cau',
-  'Loai',
-  'Tu ngay',
-  'Den ngay',
-  'So ngay',
-  'Trang thai',
-  'Nguoi duyet',
-  'Ghi chu quan ly',
-  'Ly do'
+  'Ma don', 'Nguoi nop', 'Ma nhan vien', 'Phong ban',
+  'Nhom yeu cau', 'Loai', 'Tu ngay', 'Den ngay',
+  'So ngay', 'So gio OT', 'Trang thai', 'Nguoi duyet', 'Ghi chu quan ly', 'Ly do'
 ];
 
 const leaveInclude = [
@@ -33,7 +23,16 @@ const escapeCsvValue = (value) => {
   return `"${normalized.replace(/"/g, '""')}"`;
 };
 
-const calculateBusinessDays = (startDate, endDate) => {
+/**
+ * Tính số ngày công thực tế giữa 2 ngày (loại trừ Chủ nhật, tính Thứ 7 = 0.5).
+ * Nếu holidayDates được cung cấp, bỏ qua các ngày lễ.
+ *
+ * @param {string} startDate - YYYY-MM-DD
+ * @param {string} endDate   - YYYY-MM-DD
+ * @param {Set<string>} [holidayDates] - Set of 'YYYY-MM-DD' strings
+ * @returns {number}
+ */
+export const calculateBusinessDays = (startDate, endDate, holidayDates = new Set()) => {
   const start = new Date(`${startDate}T00:00:00`);
   const end = new Date(`${endDate}T00:00:00`);
 
@@ -45,14 +44,31 @@ const calculateBusinessDays = (startDate, endDate) => {
   const cursor = new Date(start);
 
   while (cursor <= end) {
-    const day = cursor.getDay();
-    if (day !== 0) {
-      days += day === 6 ? 0.5 : 1;
+    const dayOfWeek = cursor.getDay();
+    const dateStr = cursor.toISOString().slice(0, 10);
+
+    if (dayOfWeek !== 0 && !holidayDates.has(dateStr)) {
+      // Thứ 7 = nửa ngày, các ngày còn lại = 1 ngày
+      days += dayOfWeek === 6 ? 0.5 : 1;
     }
+
     cursor.setDate(cursor.getDate() + 1);
   }
 
   return days || 0.5;
+};
+
+/**
+ * Lấy Set ngày lễ trong khoảng [startDate, endDate] từ DB.
+ */
+const fetchHolidayDates = async (startDate, endDate) => {
+  const holidays = await Holiday.findAll({
+    where: {
+      date: { [Op.between]: [startDate, endDate] }
+    },
+    attributes: ['date']
+  });
+  return new Set(holidays.map((h) => String(h.date)));
 };
 
 const getManagedDepartmentId = async (req) => {
@@ -110,11 +126,14 @@ const buildLeaveFilters = async (req) => {
 
 export const createLeaveRequest = async (req, res, next) => {
   try {
-    const { request_type = 'leave', leave_type, start_date, end_date, reason } = req.body;
-    const dayCount = calculateBusinessDays(start_date, end_date);
+    const { request_type = 'leave', leave_type, start_date, end_date, reason, ot_hours } = req.body;
+
+    // Lấy ngày lễ để tính chính xác
+    const holidayDates = await fetchHolidayDates(start_date, end_date);
+    const dayCount = calculateBusinessDays(start_date, end_date, holidayDates);
 
     if (dayCount <= 0) {
-      return res.status(400).json({ success: false, message: 'Khoang thoi gian dang ky khong hop le.' });
+      return res.status(400).json({ success: false, message: 'Khoang thoi gian dang ky khong hop le hoac trung ngay le.' });
     }
 
     const request = await LeaveRequest.create({
@@ -125,6 +144,7 @@ export const createLeaveRequest = async (req, res, next) => {
       end_date,
       reason,
       day_count: dayCount,
+      ot_hours: request_type === 'overtime' ? (Number(ot_hours) || null) : null,
       status: 'pending'
     });
 
@@ -136,7 +156,8 @@ export const createLeaveRequest = async (req, res, next) => {
       details: {
         request_type: request.request_type,
         leave_type: request.leave_type,
-        day_count: Number(request.day_count)
+        day_count: Number(request.day_count),
+        ot_hours: request.ot_hours ? Number(request.ot_hours) : null
       }
     });
 
@@ -188,6 +209,7 @@ export const exportLeaveRequests = async (req, res, next) => {
       request.start_date,
       request.end_date,
       Number(request.day_count || 0),
+      request.ot_hours ? Number(request.ot_hours) : '',
       request.status,
       request.approver?.full_name,
       request.manager_comment,
@@ -228,10 +250,29 @@ export const updateLeaveStatus = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Don nay da duoc xu ly truoc do.' });
     }
 
+    // Manager chỉ được duyệt đơn thuộc phòng ban mình phụ trách
+    if (req.user.role === 'manager') {
+      const managedDeptId = await getManagedDepartmentId(req);
+      const applicant = await User.findByPk(request.user_id, { attributes: ['department_id'] });
+      if (!managedDeptId || applicant?.department_id !== managedDeptId) {
+        return res.status(403).json({ success: false, message: 'Ban khong co quyen duyet don cua phong ban khac.' });
+      }
+    }
+
+    const fromStatus = request.status;
     request.status = status;
     request.approver_id = req.user.id;
     request.manager_comment = manager_comment || null;
     await request.save();
+
+    // Ghi lịch sử duyệt
+    await LeaveApprovalLog.create({
+      leave_request_id: request.id,
+      actor_id: req.user.id,
+      from_status: fromStatus,
+      to_status: status,
+      comment: manager_comment || null
+    });
 
     await writeAuditLog({
       userId: req.user.id,
@@ -246,6 +287,53 @@ export const updateLeaveStatus = async (req, res, next) => {
       message: status === 'approved' ? 'Da duyet don thanh cong.' : 'Da tu choi don thanh cong.',
       request
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Nhân viên hủy đơn của chính mình khi còn ở trạng thái pending.
+ */
+export const cancelLeaveRequest = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const request = await LeaveRequest.findByPk(id);
+
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Khong tim thay don.' });
+    }
+
+    // Chỉ người tạo đơn mới được hủy
+    if (request.user_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Ban khong co quyen huy don cua nguoi khac.' });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({ success: false, message: 'Chi co the huy don dang cho duyet.' });
+    }
+
+    const fromStatus = request.status;
+    request.status = 'cancelled';
+    await request.save();
+
+    await LeaveApprovalLog.create({
+      leave_request_id: request.id,
+      actor_id: req.user.id,
+      from_status: fromStatus,
+      to_status: 'cancelled',
+      comment: 'Nguoi nop don tu huy.'
+    });
+
+    await writeAuditLog({
+      userId: req.user.id,
+      action: 'leave.cancelled',
+      entityType: 'leave_request',
+      entityId: request.id,
+      details: {}
+    });
+
+    res.status(200).json({ success: true, message: 'Da huy don thanh cong.', request });
   } catch (error) {
     next(error);
   }
@@ -281,12 +369,14 @@ export const getLeaveStats = async (req, res, next) => {
     const stats = requests.reduce((acc, request) => {
       acc.byStatus[request.status] = (acc.byStatus[request.status] || 0) + 1;
       acc.totalDays += Number(request.day_count || 0);
+      if (request.ot_hours) acc.totalOtHours += Number(request.ot_hours);
       return acc;
     }, {
       year,
       totalRequests: requests.length,
       totalDays: 0,
-      byStatus: { pending: 0, approved: 0, rejected: 0 }
+      totalOtHours: 0,
+      byStatus: { pending: 0, approved: 0, rejected: 0, cancelled: 0 }
     });
 
     res.status(200).json({ success: true, stats });

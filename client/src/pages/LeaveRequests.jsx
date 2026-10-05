@@ -16,7 +16,8 @@ const leaveLabels = {
 const statusLabels = {
   pending: 'Chờ duyệt',
   approved: 'Đã duyệt',
-  rejected: 'Từ chối'
+  rejected: 'Từ chối',
+  cancelled: 'Đã hủy'
 };
 
 const initialFilters = {
@@ -155,6 +156,17 @@ export default function LeaveRequests() {
     }
   };
 
+  const handleCancel = async (id) => {
+    if (!window.confirm('Bạn có chắc muốn hủy đơn này không?')) return;
+    try {
+      await leavesApi.cancel(id);
+      pushToast('Đã hủy đơn thành công.', 'success');
+      fetchRequests(filters, page);
+    } catch (err) {
+      pushToast(err.message || 'Không thể hủy đơn.', 'error');
+    }
+  };
+
   const handleExportCsv = async () => {
     setIsExporting(true);
     try {
@@ -228,6 +240,7 @@ export default function LeaveRequests() {
                   <option value="pending">Chờ duyệt</option>
                   <option value="approved">Đã duyệt</option>
                   <option value="rejected">Từ chối</option>
+                  <option value="cancelled">Đã hủy</option>
                 </select>
               </section>
 
@@ -382,6 +395,11 @@ export default function LeaveRequests() {
                   </td>
                   <td>
                     <strong>{Number(request.day_count || 0)}</strong> ngày
+                    {request.ot_hours && (
+                      <small className="muted" style={{ display: 'block' }}>
+                        {Number(request.ot_hours)} giờ OT
+                      </small>
+                    )}
                   </td>
                   <td>
                     <p className="table-reason-text">{request.reason}</p>
@@ -422,6 +440,19 @@ export default function LeaveRequests() {
                           {request.approver?.full_name ? `Bởi ${request.approver.full_name}` : 'Đã xử lý'}
                         </small>
                       )}
+                    </td>
+                  )}
+                  {/* Nút hủy cho nhân viên với đơn pending của chính mình */}
+                  {!isManager && request.user_id === user?.id && request.status === 'pending' && (
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => handleCancel(request.id)}
+                        className="btn btn-secondary compact-button danger-text"
+                        aria-label={`Hủy đơn số ${request.id}`}
+                      >
+                        Hủy đơn
+                      </button>
                     </td>
                   )}
                 </tr>
