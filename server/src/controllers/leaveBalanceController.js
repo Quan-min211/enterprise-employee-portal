@@ -83,7 +83,7 @@ export const updateBalance = async (req, res, next) => {
 
     const user = await User.findByPk(userId, { attributes: ['id', 'full_name'] });
     if (!user) {
-      return res.status(404).json({ success: false, message: 'Khong tim thay nhan vien.' });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy nhân viên.' });
     }
 
     const balance = await ensureBalance(Number(userId), Number(year));
@@ -107,7 +107,7 @@ export const updateBalance = async (req, res, next) => {
       details: { target_user_id: userId, year, annual_entitlement, carried_over_days }
     });
 
-    res.status(200).json({ success: true, message: 'Cap nhat so du phep thanh cong.', balance });
+    res.status(200).json({ success: true, message: 'Cập nhật số dư phép thành công.', balance });
   } catch (error) {
     next(error);
   }

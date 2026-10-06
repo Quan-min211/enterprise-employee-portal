@@ -19,7 +19,7 @@ export default function Login() {
       await login(email, password);
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Dang nhap that bai.');
+      setError(err.message || 'Đăng nhập thất bại.');
     } finally {
       setLoading(false);
     }
@@ -29,8 +29,8 @@ export default function Login() {
     <main className="login-screen">
       <article className="login-card">
         <header>
-          <h1>Dang Nhap Cong Noi Bo</h1>
-          <p>Cong ty TNHH Cong nghiep Fu Sheng (Viet Nam)</p>
+          <h1>Đăng Nhập Cổng Nội Bộ</h1>
+          <p>Công ty TNHH Công nghiệp Fu Sheng (Việt Nam)</p>
         </header>
 
         {error && (
@@ -41,10 +41,10 @@ export default function Login() {
 
         <form onSubmit={handleSubmit}>
           <fieldset>
-            <legend className="visually-hidden">Thong tin xac thuc</legend>
+            <legend className="visually-hidden">Thông tin xác thực</legend>
 
             <section className="field-group">
-              <label htmlFor="email">Email cong vu</label>
+              <label htmlFor="email">Email công vụ</label>
               <input
                 id="email"
                 type="email"
@@ -56,12 +56,12 @@ export default function Login() {
             </section>
 
             <section className="field-group">
-              <label htmlFor="password">Mat khau</label>
+              <label htmlFor="password">Mật khẩu</label>
               <input
                 id="password"
                 type="password"
                 required
-                placeholder="Nhap mat khau"
+                placeholder="Nhập mật khẩu"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -72,13 +72,13 @@ export default function Login() {
               disabled={loading}
               className="btn btn-primary full-width"
             >
-              {loading ? 'Dang xac thuc...' : 'Dang nhap vao he thong'}
+              {loading ? 'Đang xác thực...' : 'Đăng nhập vào hệ thống'}
             </button>
           </fieldset>
         </form>
 
         <footer>
-          <p>Tai khoan mac dinh thu nghiem:</p>
+          <p>Tài khoản mặc định thử nghiệm:</p>
           <code>admin@fusheng.com.vn / Admin@123</code>
         </footer>
       </article>

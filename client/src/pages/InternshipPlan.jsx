@@ -2,61 +2,61 @@ import React from 'react';
 
 const phases = [
   {
-    title: 'Khao sat va phan tich',
-    period: 'Tuan 1',
+    title: 'Khảo sát và phân tích',
+    period: 'Tuần 1',
     status: 'done',
     items: [
-      'Xac dinh bai toan cong thong tin noi bo cho nhan vien nha may.',
-      'Mo ta 3 vai tro su dung: admin, manager, employee.',
-      'Chot nhom nghiep vu: danh ba, nghi phep/OT, thong bao, ho so ca nhan.'
+      'Xác định bài toán cổng thông tin nội bộ cho nhân viên nhà máy.',
+      'Mô tả 3 vai trò sử dụng: admin, manager, employee.',
+      'Chốt nhóm nghiệp vụ: danh bạ, nghỉ phép / OT, thông báo, hồ sơ cá nhân.'
     ]
   },
   {
-    title: 'Thiet ke kien truc',
-    period: 'Tuan 2',
+    title: 'Thiết kế kiến trúc',
+    period: 'Tuần 2',
     status: 'done',
     items: [
-      'Dung monorepo gom React frontend va Express backend.',
-      'Thiet ke MySQL schema voi Sequelize models va quan he khoa ngoai.',
-      'Thong nhat auth bang JWT trong HttpOnly cookie va RBAC theo vai tro.'
+      'Dựng monorepo gồm React frontend và Express backend.',
+      'Thiết kế MySQL schema với Sequelize models và quan hệ khóa ngoại.',
+      'Thống nhất xác thực bằng JWT trong HttpOnly cookie và RBAC theo vai trò.'
     ]
   },
   {
-    title: 'Xay dung module chinh',
-    period: 'Tuan 3-5',
+    title: 'Xây dựng module chính',
+    period: 'Tuần 3–5',
     status: 'active',
     items: [
-      'Hoan thien dashboard tong quan va danh ba nhan vien.',
-      'Xay quy trinh nop, xem, duyet, tu choi don nghi phep va OT.',
-      'Cho phep manager/admin dang thong bao noi bo theo muc uu tien.'
+      'Hoàn thiện dashboard tổng quan và danh bạ nhân viên.',
+      'Xây quy trình nộp, xem, duyệt, từ chối đơn nghỉ phép và OT.',
+      'Cho phép manager/admin đăng thông báo nội bộ theo mức ưu tiên.'
     ]
   },
   {
-    title: 'Kiem thu va dong goi',
-    period: 'Tuan 6',
+    title: 'Kiểm thử và đóng gói',
+    period: 'Tuần 6',
     status: 'next',
     items: [
-      'Kiem tra responsive, truy cap ban phim va tuong phan mau.',
-      'Kiem thu API theo role va cac truong hop loi xac thuc.',
-      'Dong goi Docker Compose va hoan thien tai lieu bao cao thuc tap.'
+      'Kiểm tra responsive, truy cập bàn phím và tương phản màu.',
+      'Kiểm thử API theo role và các trường hợp lỗi xác thực.',
+      'Đóng gói Docker Compose và hoàn thiện tài liệu báo cáo thực tập.'
     ]
   }
 ];
 
 const deliverables = [
   'Source code monorepo client/server',
-  'Database schema va seed account demo',
-  'Giao dien noi bo responsive',
-  'Docker Compose de trien khai noi bo',
-  'Tai lieu SYSTEM_CONTEXT, PRODUCT, DESIGN'
+  'Database schema và seed tài khoản demo',
+  'Giao diện nội bộ responsive',
+  'Docker Compose để triển khai nội bộ',
+  'Tài liệu SYSTEM_CONTEXT, PRODUCT, DESIGN'
 ];
 
 const acceptanceChecks = [
-  'Nhan vien dang nhap va cap nhat ho so ca nhan.',
-  'Nhan vien tim thay dong nghiep theo ten, ma NV, email hoac phong ban.',
-  'Nhan vien gui don nghi phep/OT, manager/admin xu ly online.',
-  'Manager/admin dang thong bao, nhan vien doc duoc bang tin moi.',
-  'Admin quan ly danh muc phong ban va tai khoan nhan vien.'
+  'Nhân viên đăng nhập và cập nhật hồ sơ cá nhân.',
+  'Nhân viên tìm thấy đồng nghiệp theo tên, mã NV, email hoặc phòng ban.',
+  'Nhân viên gửi đơn nghỉ phép / OT, manager/admin xử lý trực tuyến.',
+  'Manager/admin đăng thông báo, nhân viên đọc được bảng tin mới.',
+  'Admin quản lý danh mục phòng ban và tài khoản nhân viên.'
 ];
 
 export default function InternshipPlan() {
@@ -64,41 +64,41 @@ export default function InternshipPlan() {
     <section aria-labelledby="internship-plan-heading">
       <header className="page-header plan-hero">
         <section>
-          <p className="eyebrow">Ke hoach thuc tap</p>
-          <h1 id="internship-plan-heading">Xay Dung Web Noi Bo Doanh Nghiep</h1>
+          <p className="eyebrow">Kế hoạch thực tập</p>
+          <h1 id="internship-plan-heading">Xây Dựng Web Nội Bộ Doanh Nghiệp</h1>
           <p>
-            Ban ke hoach nay gom muc tieu, pham vi, tien do va tieu chi nghiem thu cho de tai
-            Enterprise Employee Portal tai Fu Sheng Vietnam.
+            Bản kế hoạch này gồm mục tiêu, phạm vi, tiến độ và tiêu chí nghiệm thu cho đề tài
+            Enterprise Employee Portal tại Fu Sheng Vietnam.
           </p>
         </section>
-        <aside className="plan-status" aria-label="Trang thai hien tai cua de tai">
-          <strong>Dang trien khai</strong>
+        <aside className="plan-status" aria-label="Trạng thái hiện tại của đề tài">
+          <strong>Đang triển khai</strong>
           <data value="70">70%</data>
           <meter min="0" max="100" value="70">70%</meter>
         </aside>
       </header>
 
-      <section className="plan-summary-grid" aria-label="Tom tat de tai">
+      <section className="plan-summary-grid" aria-label="Tóm tắt đề tài">
         <article className="metric-card">
-          <h2>Pham Vi</h2>
+          <h2>Phạm Vi</h2>
           <p className="metric-value">5</p>
-          <p>Module nghiep vu noi bo</p>
+          <p>Module nghiệp vụ nội bộ</p>
         </article>
         <article className="metric-card success">
-          <h2>Vai Tro</h2>
+          <h2>Vai Trò</h2>
           <p className="metric-value">3</p>
           <p>Admin, Manager, Employee</p>
         </article>
         <article className="metric-card warning">
-          <h2>Thoi Gian</h2>
+          <h2>Thời Gian</h2>
           <p className="metric-value">6</p>
-          <p>Tuan thuc hien va nghiem thu</p>
+          <p>Tuần thực hiện và nghiệm thu</p>
         </article>
       </section>
 
-      <section className="plan-grid" aria-label="Noi dung ke hoach">
+      <section className="plan-grid" aria-label="Nội dung kế hoạch">
         <article className="panel plan-wide">
-          <h2>Lo Trinh Thuc Hien</h2>
+          <h2>Lộ Trình Thực Hiện</h2>
           <ol className="timeline-list">
             {phases.map((phase) => (
               <li key={phase.title} className={`timeline-item ${phase.status}`}>
@@ -108,8 +108,20 @@ export default function InternshipPlan() {
                       <h3>{phase.title}</h3>
                       <p>{phase.period}</p>
                     </section>
-                    <mark className={`badge badge-${phase.status === 'done' ? 'approved' : phase.status === 'active' ? 'pending' : 'normal'}`}>
-                      {phase.status === 'done' ? 'Hoan thanh' : phase.status === 'active' ? 'Dang lam' : 'Tiep theo'}
+                    <mark
+                      className={`badge badge-${
+                        phase.status === 'done'
+                          ? 'approved'
+                          : phase.status === 'active'
+                            ? 'pending'
+                            : 'normal'
+                      }`}
+                    >
+                      {phase.status === 'done'
+                        ? 'Hoàn thành'
+                        : phase.status === 'active'
+                          ? 'Đang làm'
+                          : 'Tiếp theo'}
                     </mark>
                   </header>
                   <ul>
@@ -123,9 +135,9 @@ export default function InternshipPlan() {
           </ol>
         </article>
 
-        <section className="plan-side" aria-label="Dau ra va nghiem thu">
+        <section className="plan-side" aria-label="Đầu ra và nghiệm thu">
           <article className="panel">
-            <h2>Dau Ra Can Co</h2>
+            <h2>Đầu Ra Cần Có</h2>
             <ul className="check-list">
               {deliverables.map((item) => (
                 <li key={item}>{item}</li>
@@ -134,7 +146,7 @@ export default function InternshipPlan() {
           </article>
 
           <article className="panel">
-            <h2>Tieu Chi Nghiem Thu</h2>
+            <h2>Tiêu Chí Nghiệm Thu</h2>
             <ul className="check-list">
               {acceptanceChecks.map((item) => (
                 <li key={item}>{item}</li>

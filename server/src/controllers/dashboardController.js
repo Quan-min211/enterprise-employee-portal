@@ -77,7 +77,7 @@ export const getDashboardSummary = async (req, res, next) => {
     ]);
 
     const departmentLoad = recentLeaves.reduce((acc, request) => {
-      const departmentName = request.applicant?.department?.name || 'Chua phan bo';
+      const departmentName = request.applicant?.department?.name || 'Chưa phân bổ';
       acc[departmentName] = (acc[departmentName] || 0) + 1;
       return acc;
     }, {});

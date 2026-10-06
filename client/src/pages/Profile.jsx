@@ -10,6 +10,7 @@ export default function Profile() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    document.title = 'Hồ Sơ Cá Nhân | Fu Sheng Portal';
     if (user) {
       setProfileForm({
         full_name: user.full_name || '',
@@ -27,9 +28,9 @@ export default function Profile() {
     try {
       await employeesApi.updateMe(profileForm);
       await refreshUser();
-      setMessage('Cap nhat ho so thanh cong.');
+      setMessage('Cập nhật hồ sơ thành công.');
     } catch (err) {
-      setError(err.message || 'Khong the cap nhat ho so.');
+      setError(err.message || 'Không thể cập nhật hồ sơ.');
     }
   };
 
@@ -41,48 +42,58 @@ export default function Profile() {
     try {
       await employeesApi.changePassword(passwordForm);
       setPasswordForm({ current_password: '', new_password: '' });
-      setMessage('Doi mat khau thanh cong.');
+      setMessage('Đổi mật khẩu thành công.');
     } catch (err) {
-      setError(err.message || 'Khong the doi mat khau.');
+      setError(err.message || 'Không thể đổi mật khẩu.');
     }
+  };
+
+  const roleLabels = {
+    admin: 'Quản trị viên',
+    manager: 'Quản lý bộ phận',
+    employee: 'Nhân viên'
   };
 
   return (
     <section aria-labelledby="profile-heading">
       <header className="page-header">
         <section>
-          <h1 id="profile-heading">Ho So Ca Nhan</h1>
-          <p>Xem va cap nhat thong tin lien lac ca nhan trong cong thong tin noi bo.</p>
+          <h1 id="profile-heading">Hồ Sơ Cá Nhân</h1>
+          <p>Xem và cập nhật thông tin liên lạc cá nhân trong cổng thông tin nội bộ.</p>
         </section>
       </header>
 
       {message && <aside className="alert success-alert" aria-live="polite">{message}</aside>}
       {error && <aside className="alert" aria-live="polite">{error}</aside>}
 
-      <section className="profile-grid" aria-label="Thong tin ho so va bao mat">
+      <section className="profile-grid" aria-label="Thông tin hồ sơ và bảo mật">
         <article className="panel">
-          <h2>Thong Tin Nhan Vien</h2>
+          <h2>Thông Tin Nhân Viên</h2>
           <dl className="detail-list">
-            <dt>Ma nhan vien</dt>
+            <dt>Mã nhân viên</dt>
             <dd><code>{user?.employee_code}</code></dd>
-            <dt>Vai tro</dt>
-            <dd>{user?.role}</dd>
-            <dt>Phong ban</dt>
-            <dd>{user?.department?.name || 'Chua phan bo'}</dd>
-            <dt>Chuc vu</dt>
-            <dd>{user?.position || 'Nhan vien'}</dd>
-            <dt>Ngay vao lam</dt>
-            <dd>{user?.hire_date || 'Chua cap nhat'}</dd>
+            <dt>Vai trò</dt>
+            <dd>{roleLabels[user?.role] || user?.role}</dd>
+            <dt>Phòng ban</dt>
+            <dd>{user?.department?.name || 'Chưa phân bổ'}</dd>
+            <dt>Chức vụ</dt>
+            <dd>{user?.position || 'Nhân viên'}</dd>
+            <dt>Ngày vào làm</dt>
+            <dd>
+              {user?.hire_date
+                ? new Date(user.hire_date).toLocaleDateString('vi-VN')
+                : 'Chưa cập nhật'}
+            </dd>
           </dl>
         </article>
 
         <article className="panel">
-          <h2>Cap Nhat Lien Lac</h2>
+          <h2>Cập Nhật Liên Lạc</h2>
           <form onSubmit={handleProfileSubmit}>
             <fieldset>
-              <legend className="visually-hidden">Thong tin lien lac</legend>
+              <legend className="visually-hidden">Thông tin liên lạc</legend>
               <section className="field-group">
-                <label htmlFor="profile_full_name">Ho va ten</label>
+                <label htmlFor="profile_full_name">Họ và tên</label>
                 <input
                   id="profile_full_name"
                   required
@@ -91,7 +102,7 @@ export default function Profile() {
                 />
               </section>
               <section className="field-group">
-                <label htmlFor="profile_phone">So dien thoai</label>
+                <label htmlFor="profile_phone">Số điện thoại</label>
                 <input
                   id="profile_phone"
                   value={profileForm.phone}
@@ -107,18 +118,18 @@ export default function Profile() {
                   onChange={(e) => setProfileForm({ ...profileForm, avatar_url: e.target.value })}
                 />
               </section>
-              <button type="submit" className="btn btn-primary">Luu ho so</button>
+              <button type="submit" className="btn btn-primary">Lưu hồ sơ</button>
             </fieldset>
           </form>
         </article>
 
         <article className="panel">
-          <h2>Doi Mat Khau</h2>
+          <h2>Đổi Mật Khẩu</h2>
           <form onSubmit={handlePasswordSubmit}>
             <fieldset>
-              <legend className="visually-hidden">Doi mat khau tai khoan</legend>
+              <legend className="visually-hidden">Đổi mật khẩu tài khoản</legend>
               <section className="field-group">
-                <label htmlFor="current_password">Mat khau hien tai</label>
+                <label htmlFor="current_password">Mật khẩu hiện tại</label>
                 <input
                   id="current_password"
                   type="password"
@@ -128,7 +139,7 @@ export default function Profile() {
                 />
               </section>
               <section className="field-group">
-                <label htmlFor="new_password">Mat khau moi</label>
+                <label htmlFor="new_password">Mật khẩu mới</label>
                 <input
                   id="new_password"
                   type="password"
@@ -138,7 +149,7 @@ export default function Profile() {
                   onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
                 />
               </section>
-              <button type="submit" className="btn btn-secondary">Doi mat khau</button>
+              <button type="submit" className="btn btn-secondary">Đổi mật khẩu</button>
             </fieldset>
           </form>
         </article>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { dashboardApi } from '../api/dashboardApi';
+import { leaveBalancesApi } from '../api/leavesApi';
 import { useAuth } from '../contexts/AuthContext';
 
 const leaveLabels = {
@@ -14,7 +15,8 @@ const leaveLabels = {
 const statusLabels = {
   pending: 'Chờ duyệt',
   approved: 'Đã duyệt',
-  rejected: 'Từ chối'
+  rejected: 'Từ chối',
+  cancelled: 'Đã hủy'
 };
 
 const roleLabels = {
@@ -35,27 +37,36 @@ export default function Dashboard() {
     pendingActionItems: [],
     departmentLoad: []
   });
+  const [leaveBalance, setLeaveBalance] = useState(null);
 
+  const isEmployee = user?.role === 'employee';
   const isManager = user?.role === 'admin' || user?.role === 'manager';
 
   useEffect(() => {
     document.title = 'Tổng quan hệ thống | Fu Sheng Portal';
 
-    const fetchDashboardData = async () => {
+    const fetchAll = async () => {
       try {
-        const res = await dashboardApi.getSummary();
-        if (res?.summary) {
-          setStats(res.summary);
+        const [dashRes, balRes] = await Promise.allSettled([
+          dashboardApi.getSummary(),
+          isEmployee ? leaveBalancesApi.getMyBalance({ year: new Date().getFullYear() }) : Promise.resolve(null)
+        ]);
+
+        if (dashRes.status === 'fulfilled' && dashRes.value?.summary) {
+          setStats(dashRes.value.summary);
+        }
+        if (balRes.status === 'fulfilled' && balRes.value) {
+          setLeaveBalance(balRes.value?.balance ?? balRes.value ?? null);
         }
       } catch (err) {
-        console.error('Error loading dashboard stats:', err);
+        console.error('Error loading dashboard:', err);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    fetchAll();
+  }, [isEmployee]);
 
   const totalLeaveRequests = Object.values(stats.leaveStatus).reduce(
     (sum, value) => sum + Number(value || 0),
@@ -78,6 +89,58 @@ export default function Dashboard() {
     month: 'long',
     day: 'numeric'
   });
+
+  /* ------------------------------------------------------------------ */
+  /* Employee leave-balance summary card                                  */
+  /* ------------------------------------------------------------------ */
+  const EmployeeLeaveCard = () => {
+    if (!isEmployee) return null;
+
+    const remaining = leaveBalance?.remaining_days ?? null;
+    const entitlement = leaveBalance?.annual_entitlement ?? null;
+    const used = leaveBalance?.used_days ?? null;
+    const carriedOver = leaveBalance?.carried_over_days ?? 0;
+
+    const pctUsed =
+      entitlement > 0 ? Math.min(Math.round(((used ?? 0) / entitlement) * 100), 100) : 0;
+
+    return (
+      <article className="metric-card employee-balance-card" aria-label="Ngày phép còn lại của tôi">
+        <header>
+          <h2>Ngày Phép Còn Lại</h2>
+          <data value={new Date().getFullYear()} className="badge badge-accent">
+            Năm {new Date().getFullYear()}
+          </data>
+        </header>
+
+        {isLoading ? (
+          <p className="skeleton skeleton-title" aria-hidden="true"></p>
+        ) : remaining !== null ? (
+          <>
+            <data value={remaining} className="metric-value">
+              {remaining}
+              <small> ngày</small>
+            </data>
+            <p className="metric-caption">
+              Đã dùng {used ?? 0} / {entitlement ?? 0} ngày
+              {carriedOver > 0 ? ` (+ ${carriedOver} ngày chuyển tiếp)` : ''}
+            </p>
+            <meter
+              min="0"
+              max="100"
+              value={pctUsed}
+              className={pctUsed >= 80 ? 'danger' : pctUsed >= 50 ? 'warning' : 'success'}
+              aria-label={`Đã sử dụng ${pctUsed}% số ngày phép`}
+            >
+              {pctUsed}%
+            </meter>
+          </>
+        ) : (
+          <p className="muted">Chưa có dữ liệu số dư phép năm.</p>
+        )}
+      </article>
+    );
+  };
 
   return (
     <section aria-labelledby="dashboard-heading">
@@ -127,6 +190,9 @@ export default function Dashboard() {
 
       {/* Metric summary cards */}
       <section className="metrics-grid" aria-label="Thống kê tổng hợp">
+        {/* Employee: show leave balance card first */}
+        {isEmployee && <EmployeeLeaveCard />}
+
         <article className="metric-card">
           <header>
             <h2>Tổng Nhân Sự</h2>
@@ -154,23 +220,27 @@ export default function Dashboard() {
               {stats.leaveStatus.pending}
             </data>
           )}
-          <p className="metric-caption">Nghỉ phép & tăng ca</p>
+          <p className="metric-caption">
+            {isEmployee ? 'Đơn của tôi đang chờ' : 'Nghỉ phép & tăng ca'}
+          </p>
         </article>
 
-        <article className="metric-card success">
-          <header>
-            <h2>Phòng Ban</h2>
-            <data value="active" className="badge badge-success">Bộ phận</data>
-          </header>
-          {isLoading ? (
-            <p className="skeleton skeleton-title" aria-hidden="true"></p>
-          ) : (
-            <data value={stats.totalDepartments} className="metric-value">
-              {stats.totalDepartments}
-            </data>
-          )}
-          <p className="metric-caption">Cơ cấu tổ chức</p>
-        </article>
+        {!isEmployee && (
+          <article className="metric-card success">
+            <header>
+              <h2>Phòng Ban</h2>
+              <data value="active" className="badge badge-success">Bộ phận</data>
+            </header>
+            {isLoading ? (
+              <p className="skeleton skeleton-title" aria-hidden="true"></p>
+            ) : (
+              <data value={stats.totalDepartments} className="metric-value">
+                {stats.totalDepartments}
+              </data>
+            )}
+            <p className="metric-caption">Cơ cấu tổ chức</p>
+          </article>
+        )}
 
         <article className="metric-card">
           <header>
@@ -194,7 +264,7 @@ export default function Dashboard() {
         <section className="panel" aria-labelledby="action-items-heading">
           <header className="panel-header">
             <h2 id="action-items-heading">
-              {isManager ? 'Đơn Cần Duyệt Gấp' : 'Đơn Chờ Của Bạn'}
+              {isManager ? 'Đơn Cần Duyệt Gấp' : 'Đơn Của Tôi Đang Chờ'}
             </h2>
             <data value={stats.pendingActionItems?.length || 0} className="badge badge-warning">
               {stats.pendingActionItems?.length || 0} đơn
@@ -288,7 +358,9 @@ export default function Dashboard() {
         {/* Panel 3: Recent Leave Requests */}
         <section className="panel" aria-labelledby="recent-leaves-heading">
           <header className="panel-header">
-            <h2 id="recent-leaves-heading">Đơn Gần Đây</h2>
+            <h2 id="recent-leaves-heading">
+              {isEmployee ? 'Đơn Gần Đây Của Tôi' : 'Đơn Gần Đây'}
+            </h2>
             <Link to="/leaves" className="badge badge-accent">
               Xem tất cả →
             </Link>
@@ -311,20 +383,22 @@ export default function Dashboard() {
                 <caption className="visually-hidden">Danh sách đơn gần đây</caption>
                 <thead>
                   <tr>
-                    <th scope="col">Người nộp</th>
+                    {!isEmployee && <th scope="col">Người nộp</th>}
                     <th scope="col">Loại</th>
-                    <th scope="col">Thời gian</th>
+                    <th scope="col">Từ ngày</th>
                     <th scope="col">Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stats.recentLeaves.map((req) => (
                     <tr key={req.id}>
-                      <td>
-                        <strong>{req.applicant?.full_name || 'N/A'}</strong>
-                        <br />
-                        <small className="muted">{req.applicant?.department?.name || 'Nhà máy'}</small>
-                      </td>
+                      {!isEmployee && (
+                        <td>
+                          <strong>{req.applicant?.full_name || 'N/A'}</strong>
+                          <br />
+                          <small className="muted">{req.applicant?.department?.name || 'Nhà máy'}</small>
+                        </td>
+                      )}
                       <td>
                         <small>
                           {req.request_type === 'overtime' ? 'Tăng ca' : leaveLabels[req.leave_type] || req.leave_type}
