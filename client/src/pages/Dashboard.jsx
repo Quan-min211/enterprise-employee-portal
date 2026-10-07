@@ -25,6 +25,18 @@ const roleLabels = {
   employee: 'Nhân viên'
 };
 
+const priorityLabels = {
+  urgent: 'Khẩn cấp',
+  important: 'Quan trọng',
+  normal: 'Thông thường'
+};
+
+/* Sort: urgent trước important */
+const sortByPriority = (a, b) => {
+  const order = { urgent: 0, important: 1, normal: 2 };
+  return (order[a.priority] ?? 9) - (order[b.priority] ?? 9);
+};
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
@@ -35,11 +47,16 @@ export default function Dashboard() {
     recentAnnouncements: [],
     recentLeaves: [],
     pendingActionItems: [],
-    departmentLoad: []
+    departmentLoad: [],
+    // manager extras
+    deptEmployeeCount: null,
+    deptInfo: null,
+    urgentAnnouncements: []
   });
   const [leaveBalance, setLeaveBalance] = useState(null);
 
   const isEmployee = user?.role === 'employee';
+  const isPureManager = user?.role === 'manager';
   const isManager = user?.role === 'admin' || user?.role === 'manager';
 
   useEffect(() => {
@@ -49,7 +66,9 @@ export default function Dashboard() {
       try {
         const [dashRes, balRes] = await Promise.allSettled([
           dashboardApi.getSummary(),
-          isEmployee ? leaveBalancesApi.getMyBalance({ year: new Date().getFullYear() }) : Promise.resolve(null)
+          isEmployee
+            ? leaveBalancesApi.getMyBalance({ year: new Date().getFullYear() })
+            : Promise.resolve(null)
         ]);
 
         if (dashRes.status === 'fulfilled' && dashRes.value?.summary) {
@@ -75,7 +94,9 @@ export default function Dashboard() {
   const processedLeaveRequests =
     Number(stats.leaveStatus.approved || 0) + Number(stats.leaveStatus.rejected || 0);
   const approvalRate =
-    totalLeaveRequests > 0 ? Math.round((processedLeaveRequests / totalLeaveRequests) * 100) : 0;
+    totalLeaveRequests > 0
+      ? Math.round((processedLeaveRequests / totalLeaveRequests) * 100)
+      : 0;
 
   const chartRows = [
     { key: 'pending', label: 'Chờ duyệt', value: stats.leaveStatus.pending, className: 'warning' },
@@ -91,7 +112,18 @@ export default function Dashboard() {
   });
 
   /* ------------------------------------------------------------------ */
-  /* Employee leave-balance summary card                                  */
+  /* Reusable: Skeleton                                                   */
+  /* ------------------------------------------------------------------ */
+  const SkeletonCards = ({ count = 2 }) => (
+    <section className="stack" aria-hidden="true">
+      {Array.from({ length: count }).map((_, i) => (
+        <p key={i} className="skeleton skeleton-card"></p>
+      ))}
+    </section>
+  );
+
+  /* ------------------------------------------------------------------ */
+  /* Employee widget: số ngày phép còn lại                               */
   /* ------------------------------------------------------------------ */
   const EmployeeLeaveCard = () => {
     if (!isEmployee) return null;
@@ -100,7 +132,6 @@ export default function Dashboard() {
     const entitlement = leaveBalance?.annual_entitlement ?? null;
     const used = leaveBalance?.used_days ?? null;
     const carriedOver = leaveBalance?.carried_over_days ?? 0;
-
     const pctUsed =
       entitlement > 0 ? Math.min(Math.round(((used ?? 0) / entitlement) * 100), 100) : 0;
 
@@ -142,6 +173,104 @@ export default function Dashboard() {
     );
   };
 
+  /* ------------------------------------------------------------------ */
+  /* Manager widget: nhân sự phòng ban                                   */
+  /* ------------------------------------------------------------------ */
+  const ManagerDeptCard = () => {
+    if (!isPureManager) return null;
+
+    const deptName = stats.deptInfo?.name || 'Phòng ban của tôi';
+    const count = stats.deptEmployeeCount;
+
+    return (
+      <article
+        className="metric-card manager-dept-card"
+        aria-label={`Nhân sự phòng ban ${deptName}`}
+      >
+        <header>
+          <h2>Nhân Sự Phòng Ban</h2>
+          <data value={stats.deptInfo?.code ?? ''} className="badge badge-accent">
+            {stats.deptInfo?.code || 'BP'}
+          </data>
+        </header>
+
+        {isLoading ? (
+          <p className="skeleton skeleton-title" aria-hidden="true"></p>
+        ) : count !== null ? (
+          <>
+            <data value={count} className="metric-value">
+              {count}
+              <small> nhân viên</small>
+            </data>
+            <p className="metric-caption">{deptName}</p>
+          </>
+        ) : (
+          <p className="muted">Chưa được phân công phòng ban.</p>
+        )}
+      </article>
+    );
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* Manager panel: thông báo quan trọng                                 */
+  /* ------------------------------------------------------------------ */
+  const UrgentAnnouncementsPanel = () => {
+    if (!isPureManager) return null;
+
+    const sorted = [...(stats.urgentAnnouncements ?? [])].sort(sortByPriority);
+
+    return (
+      <section className="panel panel-urgent" aria-labelledby="urgent-ann-heading">
+        <header className="panel-header">
+          <h2 id="urgent-ann-heading">⚠️ Thông Báo Quan Trọng</h2>
+          <data
+            value={sorted.length}
+            className={`badge ${sorted.some((a) => a.priority === 'urgent') ? 'badge-danger' : 'badge-warning'}`}
+          >
+            {sorted.length} tin
+          </data>
+        </header>
+
+        {isLoading ? (
+          <SkeletonCards count={2} />
+        ) : sorted.length === 0 ? (
+          <figure className="empty-state" role="status">
+            <figcaption>
+              <strong className="empty-title">Không có thông báo khẩn</strong>
+              <p className="muted">Hiện tại không có thông báo quan trọng hoặc khẩn cấp.</p>
+            </figcaption>
+          </figure>
+        ) : (
+          <section className="stack" aria-label="Danh sách thông báo quan trọng">
+            {sorted.map((ann) => (
+              <article key={ann.id} className={`announcement-card ${ann.priority}`}>
+                <header>
+                  <section>
+                    <h3>{ann.title}</h3>
+                    <time dateTime={ann.createdAt}>
+                      {new Date(ann.createdAt).toLocaleDateString('vi-VN')}
+                    </time>
+                  </section>
+                  <data value={ann.priority} className={`badge badge-${ann.priority}`}>
+                    {priorityLabels[ann.priority] || ann.priority}
+                  </data>
+                </header>
+                <p>{ann.content}</p>
+                {ann.author && (
+                  <footer>
+                    <small className="muted">Đăng bởi: {ann.author.full_name}</small>
+                  </footer>
+                )}
+              </article>
+            ))}
+          </section>
+        )}
+      </section>
+    );
+  };
+
+  /* ================================================================== */
+
   return (
     <section aria-labelledby="dashboard-heading">
       <header className="page-header">
@@ -150,7 +279,8 @@ export default function Dashboard() {
           <h1 id="dashboard-heading">Tổng Quan Hệ Thống</h1>
           <p>
             Chào mừng trở lại, <strong>{user?.full_name || 'Cán bộ / Nhân viên'}</strong>.
-            Vai trò: <mark className="badge badge-accent">{roleLabels[user?.role] || user?.role}</mark>
+            Vai trò:{' '}
+            <mark className="badge badge-accent">{roleLabels[user?.role] || user?.role}</mark>
           </p>
         </section>
         <aside className="shift-brief" aria-label="Tóm tắt ca vận hành">
@@ -159,7 +289,8 @@ export default function Dashboard() {
             <time dateTime={new Date().toISOString().split('T')[0]}>{todayFormatted}</time>
           </header>
           <data value={approvalRate} className="shift-stat">
-            <strong>{approvalRate}%</strong> đơn đã xử lý ({processedLeaveRequests}/{totalLeaveRequests})
+            <strong>{approvalRate}%</strong> đơn đã xử lý ({processedLeaveRequests}/
+            {totalLeaveRequests})
           </data>
         </aside>
       </header>
@@ -188,15 +319,20 @@ export default function Dashboard() {
         )}
       </nav>
 
-      {/* Metric summary cards */}
+      {/* ── Metric summary cards ── */}
       <section className="metrics-grid" aria-label="Thống kê tổng hợp">
-        {/* Employee: show leave balance card first */}
+        {/* Employee: ngày phép còn lại */}
         {isEmployee && <EmployeeLeaveCard />}
+
+        {/* Manager: nhân sự phòng ban */}
+        {isPureManager && <ManagerDeptCard />}
 
         <article className="metric-card">
           <header>
             <h2>Tổng Nhân Sự</h2>
-            <data value="active" className="badge badge-accent">Hoạt động</data>
+            <data value="active" className="badge badge-accent">
+              Hoạt động
+            </data>
           </header>
           {isLoading ? (
             <p className="skeleton skeleton-title" aria-hidden="true"></p>
@@ -210,8 +346,10 @@ export default function Dashboard() {
 
         <article className="metric-card warning">
           <header>
-            <h2>Đơn Chờ Duyệt</h2>
-            <data value="pending" className="badge badge-warning">Cần xử lý</data>
+            <h2>{isPureManager ? 'Đơn Chờ Duyệt (BP)' : 'Đơn Chờ Duyệt'}</h2>
+            <data value="pending" className="badge badge-warning">
+              Cần xử lý
+            </data>
           </header>
           {isLoading ? (
             <p className="skeleton skeleton-title" aria-hidden="true"></p>
@@ -221,7 +359,11 @@ export default function Dashboard() {
             </data>
           )}
           <p className="metric-caption">
-            {isEmployee ? 'Đơn của tôi đang chờ' : 'Nghỉ phép & tăng ca'}
+            {isEmployee
+              ? 'Đơn của tôi đang chờ'
+              : isPureManager
+                ? 'Trong phòng ban của bạn'
+                : 'Nghỉ phép & tăng ca'}
           </p>
         </article>
 
@@ -229,7 +371,9 @@ export default function Dashboard() {
           <article className="metric-card success">
             <header>
               <h2>Phòng Ban</h2>
-              <data value="active" className="badge badge-success">Bộ phận</data>
+              <data value="active" className="badge badge-success">
+                Bộ phận
+              </data>
             </header>
             {isLoading ? (
               <p className="skeleton skeleton-title" aria-hidden="true"></p>
@@ -245,7 +389,9 @@ export default function Dashboard() {
         <article className="metric-card">
           <header>
             <h2>Tỷ Lệ Xử Lý</h2>
-            <data value={approvalRate} className="badge badge-accent">Hiệu suất</data>
+            <data value={approvalRate} className="badge badge-accent">
+              Hiệu suất
+            </data>
           </header>
           {isLoading ? (
             <p className="skeleton skeleton-title" aria-hidden="true"></p>
@@ -254,11 +400,13 @@ export default function Dashboard() {
               {approvalRate}%
             </data>
           )}
-          <p className="metric-caption">{processedLeaveRequests}/{totalLeaveRequests} đơn hoàn tất</p>
+          <p className="metric-caption">
+            {processedLeaveRequests}/{totalLeaveRequests} đơn hoàn tất
+          </p>
         </article>
       </section>
 
-      {/* Main dashboard panels (2-column bento grid) */}
+      {/* ── Main dashboard panels (bento grid) ── */}
       <section className="dashboard-grid" aria-label="Bảng điều hành chi tiết">
         {/* Panel 1: Pending Action Items */}
         <section className="panel" aria-labelledby="action-items-heading">
@@ -266,15 +414,15 @@ export default function Dashboard() {
             <h2 id="action-items-heading">
               {isManager ? 'Đơn Cần Duyệt Gấp' : 'Đơn Của Tôi Đang Chờ'}
             </h2>
-            <data value={stats.pendingActionItems?.length || 0} className="badge badge-warning">
+            <data
+              value={stats.pendingActionItems?.length || 0}
+              className="badge badge-warning"
+            >
               {stats.pendingActionItems?.length || 0} đơn
             </data>
           </header>
           {isLoading ? (
-            <section className="stack" aria-hidden="true">
-              <p className="skeleton skeleton-card"></p>
-              <p className="skeleton skeleton-card"></p>
-            </section>
+            <SkeletonCards />
           ) : (stats.pendingActionItems?.length || 0) === 0 ? (
             <figure className="empty-state" role="status">
               <figcaption>
@@ -293,18 +441,27 @@ export default function Dashboard() {
                   <header>
                     <section>
                       <strong>{item.applicant?.full_name || 'Nhân viên'}</strong>
-                      <small className="muted"> ({item.applicant?.employee_code || `#${item.id}`})</small>
+                      <small className="muted">
+                        {' '}
+                        ({item.applicant?.employee_code || `#${item.id}`})
+                      </small>
                     </section>
                     <mark className="badge badge-pending">Chờ duyệt</mark>
                   </header>
                   <p className="action-item-desc">
-                    <strong>{item.request_type === 'overtime' ? 'Tăng ca' : leaveLabels[item.leave_type] || item.leave_type}:</strong>{' '}
+                    <strong>
+                      {item.request_type === 'overtime'
+                        ? 'Tăng ca'
+                        : leaveLabels[item.leave_type] || item.leave_type}
+                      :
+                    </strong>{' '}
                     {item.reason}
                   </p>
                   <footer>
                     <small className="muted">
                       Từ <time dateTime={item.start_date}>{item.start_date}</time> đến{' '}
-                      <time dateTime={item.end_date}>{item.end_date}</time> ({Number(item.day_count || 0)} ngày)
+                      <time dateTime={item.end_date}>{item.end_date}</time> (
+                      {Number(item.day_count || 0)} ngày)
                     </small>
                     <Link to="/leaves" className="btn btn-primary compact-button">
                       {isManager ? 'Xử lý ngay' : 'Xem chi tiết'}
@@ -319,25 +476,36 @@ export default function Dashboard() {
         {/* Panel 2: Status Chart */}
         <section className="panel" aria-labelledby="leave-chart-heading">
           <header className="panel-header">
-            <h2 id="leave-chart-heading">Trạng Thái Đơn Phép</h2>
+            <h2 id="leave-chart-heading">
+              {isPureManager ? 'Trạng Thái Đơn Phép (Phòng Ban)' : 'Trạng Thái Đơn Phép'}
+            </h2>
             <data value={totalLeaveRequests} className="badge badge-subtle">
               {totalLeaveRequests} đơn tổng cộng
             </data>
           </header>
-          <figure className="status-chart" role="figure" aria-label="Biểu đồ trạng thái đơn nghỉ phép">
-            <figcaption className="sr-only">Biểu đồ phân bố đơn phép theo trạng thái xử lý</figcaption>
+          <figure
+            className="status-chart"
+            role="figure"
+            aria-label="Biểu đồ trạng thái đơn nghỉ phép"
+          >
+            <figcaption className="sr-only">
+              Biểu đồ phân bố đơn phép theo trạng thái xử lý
+            </figcaption>
             {chartRows.map((row) => {
               const width =
                 totalLeaveRequests > 0
                   ? Math.max((row.value / totalLeaveRequests) * 100, row.value > 0 ? 8 : 0)
                   : 0;
-
               return (
                 <article className="chart-row" key={row.key}>
                   <header>
                     <strong>{row.label}</strong>
                     <data value={row.value} className="chart-count">
-                      {row.value} đơn ({totalLeaveRequests > 0 ? Math.round((row.value / totalLeaveRequests) * 100) : 0}%)
+                      {row.value} đơn (
+                      {totalLeaveRequests > 0
+                        ? Math.round((row.value / totalLeaveRequests) * 100)
+                        : 0}
+                      %)
                     </data>
                   </header>
                   <meter
@@ -355,21 +523,25 @@ export default function Dashboard() {
           </figure>
         </section>
 
-        {/* Panel 3: Recent Leave Requests */}
+        {/* Panel 3 (Manager only): Thông báo quan trọng */}
+        {isPureManager && <UrgentAnnouncementsPanel />}
+
+        {/* Panel 4: Recent Leave Requests */}
         <section className="panel" aria-labelledby="recent-leaves-heading">
           <header className="panel-header">
             <h2 id="recent-leaves-heading">
-              {isEmployee ? 'Đơn Gần Đây Của Tôi' : 'Đơn Gần Đây'}
+              {isEmployee
+                ? 'Đơn Gần Đây Của Tôi'
+                : isPureManager
+                  ? 'Đơn Gần Đây (Phòng Ban)'
+                  : 'Đơn Gần Đây'}
             </h2>
             <Link to="/leaves" className="badge badge-accent">
               Xem tất cả →
             </Link>
           </header>
           {isLoading ? (
-            <section className="stack" aria-hidden="true">
-              <p className="skeleton skeleton-card"></p>
-              <p className="skeleton skeleton-card"></p>
-            </section>
+            <SkeletonCards />
           ) : (stats.recentLeaves?.length || 0) === 0 ? (
             <figure className="empty-state" role="status">
               <figcaption>
@@ -396,12 +568,16 @@ export default function Dashboard() {
                         <td>
                           <strong>{req.applicant?.full_name || 'N/A'}</strong>
                           <br />
-                          <small className="muted">{req.applicant?.department?.name || 'Nhà máy'}</small>
+                          <small className="muted">
+                            {req.applicant?.department?.name || 'Nhà máy'}
+                          </small>
                         </td>
                       )}
                       <td>
                         <small>
-                          {req.request_type === 'overtime' ? 'Tăng ca' : leaveLabels[req.leave_type] || req.leave_type}
+                          {req.request_type === 'overtime'
+                            ? 'Tăng ca'
+                            : leaveLabels[req.leave_type] || req.leave_type}
                         </small>
                       </td>
                       <td>
@@ -420,7 +596,7 @@ export default function Dashboard() {
           )}
         </section>
 
-        {/* Panel 4: Recent Announcements */}
+        {/* Panel 5: Recent Announcements (chung cho mọi vai trò) */}
         <section className="panel" aria-labelledby="announcements-heading">
           <header className="panel-header">
             <h2 id="announcements-heading">Thông Báo Mới Nhất</h2>
@@ -429,10 +605,7 @@ export default function Dashboard() {
             </data>
           </header>
           {isLoading ? (
-            <section className="stack" aria-hidden="true">
-              <p className="skeleton skeleton-card"></p>
-              <p className="skeleton skeleton-card"></p>
-            </section>
+            <SkeletonCards />
           ) : stats.recentAnnouncements.length === 0 ? (
             <figure className="empty-state" role="status">
               <figcaption>
@@ -442,34 +615,27 @@ export default function Dashboard() {
             </figure>
           ) : (
             <section className="stack" aria-label="Danh sách thông báo mới">
-              {stats.recentAnnouncements.map((ann) => {
-                const priorityLabels = {
-                  urgent: 'Khẩn cấp',
-                  important: 'Quan trọng',
-                  normal: 'Thông thường'
-                };
-                return (
-                  <article key={ann.id} className={`announcement-card ${ann.priority}`}>
-                    <header>
-                      <section>
-                        <h3>{ann.title}</h3>
-                        <time dateTime={ann.createdAt}>
-                          {new Date(ann.createdAt).toLocaleDateString('vi-VN')}
-                        </time>
-                      </section>
-                      <data value={ann.priority} className={`badge badge-${ann.priority}`}>
-                        {priorityLabels[ann.priority] || ann.priority}
-                      </data>
-                    </header>
-                    <p>{ann.content}</p>
-                  </article>
-                );
-              })}
+              {stats.recentAnnouncements.map((ann) => (
+                <article key={ann.id} className={`announcement-card ${ann.priority}`}>
+                  <header>
+                    <section>
+                      <h3>{ann.title}</h3>
+                      <time dateTime={ann.createdAt}>
+                        {new Date(ann.createdAt).toLocaleDateString('vi-VN')}
+                      </time>
+                    </section>
+                    <data value={ann.priority} className={`badge badge-${ann.priority}`}>
+                      {priorityLabels[ann.priority] || ann.priority}
+                    </data>
+                  </header>
+                  <p>{ann.content}</p>
+                </article>
+              ))}
             </section>
           )}
         </section>
 
-        {/* Panel 5: Department Load Distribution */}
+        {/* Panel 6: Department Load Distribution */}
         {stats.departmentLoad?.length > 0 && (
           <section className="panel" aria-labelledby="dept-load-heading">
             <header className="panel-header">
@@ -499,11 +665,13 @@ export default function Dashboard() {
           </section>
         )}
 
-        {/* Panel 6: System Operations */}
+        {/* Panel 7: System Operations */}
         <section className="panel" aria-labelledby="ops-heading">
           <header className="panel-header">
             <h2 id="ops-heading">Vận Hành Kỹ Thuật</h2>
-            <data value="online" className="badge badge-success">Online</data>
+            <data value="online" className="badge badge-success">
+              Online
+            </data>
           </header>
           <dl className="ops-list">
             <dt>Cơ chế phân quyền</dt>
