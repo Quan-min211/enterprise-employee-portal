@@ -19,11 +19,6 @@ vi.mock('../../api/authApi', () => ({
   }
 }));
 
-vi.mock('../../api/leavesApi', () => ({
-  leavesApi: {
-    list: vi.fn().mockResolvedValue({ requests: [], total: 0, totalPages: 1, page: 1 })
-  }
-}));
 
 vi.mock('../../api/employeesApi', () => ({
   employeesApi: {
@@ -34,6 +29,65 @@ vi.mock('../../api/employeesApi', () => ({
 vi.mock('../../api/departmentsApi', () => ({
   departmentsApi: {
     list: vi.fn().mockResolvedValue({ departments: [] })
+  }
+}));
+
+vi.mock('../../api/dashboardApi', () => ({
+  dashboardApi: {
+    getSummary: vi.fn().mockResolvedValue({
+      summary: {
+        totalEmployees: 42,
+        totalDepartments: 5,
+        leaveStatus: { pending: 3, approved: 10, rejected: 2, cancelled: 1 },
+        recentAnnouncements: [],
+        recentLeaves: [],
+        pendingActionItems: [],
+        departmentLoad: [],
+        deptEmployeeCount: null,
+        deptInfo: null,
+        urgentAnnouncements: [],
+        adminData: {
+          accounts: {
+            total: 45,
+            active: 42,
+            inactive: 3,
+            roles: { admin: 2, manager: 6, employee: 37 },
+            recentUsers: []
+          },
+          audit: {
+            recentLogs: [
+              {
+                id: 1,
+                action: 'auth.login',
+                entity_type: 'user',
+                created_at: new Date().toISOString(),
+                actor: { full_name: 'Admin Test', employee_code: 'FS-ADM01' }
+              }
+            ],
+            todayCount: 5,
+            totalCount: 120
+          },
+          systemConfig: {
+            totalDepartments: 5,
+            totalHolidays: 11,
+            upcomingHolidays: [],
+            environment: 'test',
+            nodeVersion: 'v20.0.0',
+            dbStatus: 'connected',
+            uptime: 3600
+          }
+        }
+      }
+    })
+  }
+}));
+
+vi.mock('../../api/leavesApi', () => ({
+  leavesApi: {
+    list: vi.fn().mockResolvedValue({ requests: [], total: 0, totalPages: 1, page: 1 })
+  },
+  leaveBalancesApi: {
+    getMyBalance: vi.fn().mockResolvedValue({ balance: { remaining_days: 12, annual_entitlement: 14, used_days: 2 } })
   }
 }));
 
@@ -123,3 +177,44 @@ describe('Sidebar role-based navigation', () => {
     });
   });
 });
+
+// ─── Dashboard Role-Based Rendering ──────────────────────────────────────────
+
+describe('Dashboard role-based rendering', () => {
+  it('renders admin widgets when role is admin', async () => {
+    const Dashboard = (await import('../../pages/Dashboard.jsx')).default;
+    const adminUser = {
+      id: 1,
+      full_name: 'Admin User',
+      role: 'admin',
+      email: 'admin@test.com'
+    };
+
+    renderWithAuth(<Dashboard />, adminUser);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Tổng Quan Hệ Thống/i)).toBeTruthy();
+      expect(screen.getByText(/Hoạt Động Kiểm Toán Gần Đây/i)).toBeTruthy();
+      expect(screen.getByText(/Phân Bổ & Trạng Thái Tài Khoản/i)).toBeTruthy();
+      expect(screen.getByText(/Cấu Hình Hệ Thống & Master Data/i)).toBeTruthy();
+    });
+  });
+
+  it('renders employee balance widget when role is employee', async () => {
+    const Dashboard = (await import('../../pages/Dashboard.jsx')).default;
+    const empUser = {
+      id: 2,
+      full_name: 'Regular Employee',
+      role: 'employee',
+      email: 'emp@test.com'
+    };
+
+    renderWithAuth(<Dashboard />, empUser);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Tổng Quan Hệ Thống/i)).toBeTruthy();
+      expect(screen.getByText(/Ngày Phép Còn Lại/i)).toBeTruthy();
+    });
+  });
+});
+

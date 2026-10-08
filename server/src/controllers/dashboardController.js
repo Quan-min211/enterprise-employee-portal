@@ -1,5 +1,5 @@
 import { Op } from 'sequelize';
-import { Announcement, Department, LeaveRequest, User } from '../models/index.js';
+import { Announcement, Department, Holiday, LeaveRequest, User, AuditLog } from '../models/index.js';
 
 const buildScopedLeaveInclude = async (req) => {
   if (req.user.role !== 'manager') return [];
@@ -52,6 +52,7 @@ export const getDashboardSummary = async (req, res, next) => {
       pendingLeaves,
       approvedLeaves,
       rejectedLeaves,
+      cancelledLeaves,
       recentAnnouncements,
       recentLeaves,
       pendingActionItems
@@ -61,6 +62,7 @@ export const getDashboardSummary = async (req, res, next) => {
       LeaveRequest.count({ where: { ...leaveWhere, status: 'pending' }, include: scopedInclude }),
       LeaveRequest.count({ where: { ...leaveWhere, status: 'approved' }, include: scopedInclude }),
       LeaveRequest.count({ where: { ...leaveWhere, status: 'rejected' }, include: scopedInclude }),
+      LeaveRequest.count({ where: { ...leaveWhere, status: 'cancelled' }, include: scopedInclude }),
       Announcement.findAll({
         limit: 3,
         include: [{ model: User, as: 'author', attributes: ['id', 'full_name', 'role'] }],
@@ -103,7 +105,7 @@ export const getDashboardSummary = async (req, res, next) => {
           limit: 5,
           include: [{ model: User, as: 'author', attributes: ['id', 'full_name'] }],
           order: [
-            ['priority', 'ASC'], // urgent < important theo alphabet — đảo ở FE
+            ['priority', 'ASC'], // urgent < important theo alphabet
             ['created_at', 'DESC']
           ]
         })
@@ -111,6 +113,90 @@ export const getDashboardSummary = async (req, res, next) => {
       deptEmployeeCount = deptCount;
       deptInfo = dept;
       urgentAnnouncements = urgentAnns;
+    }
+
+    // ── Admin-specific extras ────────────────────────────────────────────
+    let adminData = null;
+    if (role === 'admin') {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const currentYear = new Date().getFullYear();
+
+      const [
+        totalUsers,
+        activeUsers,
+        inactiveUsers,
+        adminCount,
+        managerCount,
+        employeeCount,
+        recentAuditLogs,
+        todayAuditCount,
+        totalAuditCount,
+        totalHolidays,
+        upcomingHolidays,
+        recentUsers
+      ] = await Promise.all([
+        User.count(),
+        User.count({ where: { status: 'active' } }),
+        User.count({ where: { status: 'inactive' } }),
+        User.count({ where: { role: 'admin' } }),
+        User.count({ where: { role: 'manager' } }),
+        User.count({ where: { role: 'employee' } }),
+        AuditLog.findAll({
+          limit: 6,
+          include: [{ model: User, as: 'actor', attributes: ['id', 'full_name', 'employee_code', 'role'] }],
+          order: [['created_at', 'DESC']]
+        }),
+        AuditLog.count({ where: { created_at: { [Op.gte]: todayStart } } }),
+        AuditLog.count(),
+        Holiday.count({
+          where: {
+            date: {
+              [Op.between]: [`${currentYear}-01-01`, `${currentYear}-12-31`]
+            }
+          }
+        }),
+        Holiday.findAll({
+          where: { date: { [Op.gte]: new Date().toISOString().split('T')[0] } },
+          order: [['date', 'ASC']],
+          limit: 3
+        }),
+        User.findAll({
+          limit: 5,
+          order: [['created_at', 'DESC']],
+          attributes: ['id', 'employee_code', 'full_name', 'email', 'role', 'status', 'created_at'],
+          include: [{ model: Department, as: 'department', attributes: ['id', 'name', 'code'] }]
+        })
+      ]);
+
+      adminData = {
+        accounts: {
+          total: totalUsers,
+          active: activeUsers,
+          inactive: inactiveUsers,
+          roles: {
+            admin: adminCount,
+            manager: managerCount,
+            employee: employeeCount
+          },
+          recentUsers
+        },
+        audit: {
+          recentLogs: recentAuditLogs,
+          todayCount: todayAuditCount,
+          totalCount: totalAuditCount
+        },
+        systemConfig: {
+          totalDepartments,
+          totalHolidays,
+          upcomingHolidays,
+          environment: process.env.NODE_ENV || 'development',
+          nodeVersion: process.version,
+          dbStatus: 'connected',
+          serverTime: new Date().toISOString(),
+          uptime: Math.floor(process.uptime())
+        }
+      };
     }
     // ────────────────────────────────────────────────────────────────────
 
@@ -128,7 +214,8 @@ export const getDashboardSummary = async (req, res, next) => {
         leaveStatus: {
           pending: pendingLeaves,
           approved: approvedLeaves,
-          rejected: rejectedLeaves
+          rejected: rejectedLeaves,
+          cancelled: cancelledLeaves
         },
         recentAnnouncements,
         recentLeaves,
@@ -140,7 +227,9 @@ export const getDashboardSummary = async (req, res, next) => {
         // Manager extras
         deptEmployeeCount,
         deptInfo,
-        urgentAnnouncements
+        urgentAnnouncements,
+        // Admin extras
+        adminData
       }
     });
   } catch (error) {

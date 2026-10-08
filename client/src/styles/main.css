@@ -174,9 +174,19 @@ tr:hover td {
 .badge-approved { background-color: var(--success-bg); color: var(--success-text); }
 .badge-pending { background-color: var(--warning-bg); color: var(--warning-text); }
 .badge-rejected { background-color: var(--danger-bg); color: var(--danger-text); }
+.badge-cancelled { background-color: var(--raised); color: var(--text-muted); border: 1px solid var(--border); }
 .badge-urgent { background-color: var(--danger-bg); color: var(--danger-text); }
 .badge-important { background-color: var(--warning-bg); color: var(--warning-text); }
 .badge-normal { background-color: var(--accent-subtle); color: var(--accent); }
+.badge-accent { background-color: var(--accent-subtle); color: var(--accent); border: 1px solid hsla(210, 85%, 55%, 0.25); }
+.badge-warning { background-color: var(--warning-bg); color: var(--warning-text); border: 1px solid hsla(38, 90%, 52%, 0.25); }
+.badge-danger { background-color: var(--danger-bg); color: var(--danger-text); border: 1px solid hsla(4, 80%, 55%, 0.25); }
+.badge-success { background-color: var(--success-bg); color: var(--success-text); border: 1px solid hsla(145, 63%, 42%, 0.25); }
+.badge-subtle { background-color: var(--raised); color: var(--text-muted); border: 1px solid var(--border); }
+.badge-info { background-color: hsla(195, 85%, 45%, 0.15); color: hsl(195, 85%, 60%); border: 1px solid hsla(195, 85%, 45%, 0.25); }
+.badge-admin { background-color: hsla(280, 75%, 55%, 0.15); color: hsl(280, 80%, 72%); border: 1px solid hsla(280, 75%, 55%, 0.3); }
+.badge-manager { background-color: hsla(210, 85%, 55%, 0.15); color: var(--accent-hover); border: 1px solid hsla(210, 85%, 55%, 0.3); }
+.badge-employee { background-color: hsla(150, 60%, 45%, 0.15); color: var(--success-text); border: 1px solid hsla(150, 60%, 45%, 0.3); }
 
 mark {
   background-color: transparent;
@@ -1373,4 +1383,132 @@ figure.status-chart,
   from { opacity: 0; transform: translateX(-50%) translateY(16px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+/* ==========================================================================
+   Admin Dashboard & System Operations Styles
+   ========================================================================== */
+.metric-card.admin-accent {
+  border-top-color: hsl(280, 75%, 60%);
+}
+
+.metric-card.admin-accent:hover {
+  border-top-color: hsl(280, 80%, 72%);
+}
+
+.metric-card.admin-info {
+  border-top-color: hsl(195, 85%, 55%);
+}
+
+.metric-card.admin-info:hover {
+  border-top-color: hsl(195, 90%, 65%);
+}
+
+.admin-role-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.admin-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+
+.admin-config-card {
+  padding: var(--space-4);
+  background-color: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.admin-config-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.admin-config-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.admin-config-card h3 {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.admin-config-card p {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.admin-holiday-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.admin-holiday-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+}
+
+.admin-holiday-item strong {
+  color: var(--text-primary);
+}
+
+.admin-holiday-item time {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.code-text {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  background-color: var(--surface);
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+}
+
+.admin-audit-table td {
+  font-size: var(--text-xs);
+}
+
+.admin-audit-table td time {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.admin-account-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
 
