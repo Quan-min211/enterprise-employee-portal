@@ -3,12 +3,27 @@
  * - Login page renders correctly
  * - AuthContext redirects when unauthenticated
  * - Sidebar shows correct links per role
+ * - Dashboard role-based rendering
  */
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { AuthContext } from '../contexts/AuthContext';
+
+// Mutable mock auth state
+let mockAuth = {
+  user: null,
+  loading: false,
+  login: vi.fn(),
+  logout: vi.fn(),
+  refreshUser: vi.fn()
+};
+
+// Mock AuthContext so components calling useAuth() get mockAuth directly
+vi.mock('../contexts/AuthContext', () => ({
+  useAuth: () => mockAuth,
+  AuthProvider: ({ children }) => children
+}));
 
 // Mock API modules to avoid real HTTP calls
 vi.mock('../api/authApi', () => ({
@@ -92,7 +107,7 @@ vi.mock('../api/leavesApi', () => ({
 
 // Helper: render with auth context
 const renderWithAuth = (ui, userValue = null) => {
-  const authValue = {
+  mockAuth = {
     user: userValue,
     loading: false,
     login: vi.fn(),
@@ -101,9 +116,7 @@ const renderWithAuth = (ui, userValue = null) => {
   };
 
   return render(
-    <AuthContext.Provider value={authValue}>
-      <MemoryRouter>{ui}</MemoryRouter>
-    </AuthContext.Provider>
+    <MemoryRouter>{ui}</MemoryRouter>
   );
 };
 
