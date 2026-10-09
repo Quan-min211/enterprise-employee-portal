@@ -111,7 +111,9 @@ describe('GET /api/auth/me', () => {
       .post('/api/auth/login')
       .send({ email: 'admin.test@fusheng.com.vn', password: 'Admin@123' });
 
+    expect(loginRes.status).toBe(200);
     const cookie = loginRes.headers['set-cookie'];
+    expect(cookie).toBeDefined();
 
     const res = await request(app)
       .get('/api/auth/me')

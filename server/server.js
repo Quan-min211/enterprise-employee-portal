@@ -19,9 +19,12 @@ const PORT = process.env.PORT || 3000;
 // Trust reverse proxy (Render, Koyeb, Railway, Vercel, Cloudflare, Nginx)
 app.set('trust proxy', 1);
 
+const isTestEnv = process.env.NODE_ENV === 'test';
+
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 100,
+  skip: () => isTestEnv,
   standardHeaders: 'draft-7',
   legacyHeaders: false
 });
@@ -29,6 +32,7 @@ const apiLimiter = rateLimit({
 const loginLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 5,
+  skip: () => isTestEnv,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { success: false, message: 'Qua nhieu lan dang nhap. Vui long thu lai sau 1 phut.' }

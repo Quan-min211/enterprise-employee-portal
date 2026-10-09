@@ -5,13 +5,13 @@
  * - Sidebar shows correct links per role
  */
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { AuthContext } from '../../contexts/AuthContext';
+import { AuthContext } from '../contexts/AuthContext';
 
 // Mock API modules to avoid real HTTP calls
-vi.mock('../../api/authApi', () => ({
+vi.mock('../api/authApi', () => ({
   authApi: {
     me: vi.fn().mockRejectedValue(new Error('Unauthorized')),
     login: vi.fn(),
@@ -19,20 +19,19 @@ vi.mock('../../api/authApi', () => ({
   }
 }));
 
-
-vi.mock('../../api/employeesApi', () => ({
+vi.mock('../api/employeesApi', () => ({
   employeesApi: {
     list: vi.fn().mockResolvedValue({ employees: [], total: 0, totalPages: 1, page: 1 })
   }
 }));
 
-vi.mock('../../api/departmentsApi', () => ({
+vi.mock('../api/departmentsApi', () => ({
   departmentsApi: {
     list: vi.fn().mockResolvedValue({ departments: [] })
   }
 }));
 
-vi.mock('../../api/dashboardApi', () => ({
+vi.mock('../api/dashboardApi', () => ({
   dashboardApi: {
     getSummary: vi.fn().mockResolvedValue({
       summary: {
@@ -82,7 +81,7 @@ vi.mock('../../api/dashboardApi', () => ({
   }
 }));
 
-vi.mock('../../api/leavesApi', () => ({
+vi.mock('../api/leavesApi', () => ({
   leavesApi: {
     list: vi.fn().mockResolvedValue({ requests: [], total: 0, totalPages: 1, page: 1 })
   },
@@ -112,14 +111,14 @@ const renderWithAuth = (ui, userValue = null) => {
 
 describe('Login page', () => {
   it('renders the login heading', async () => {
-    const Login = (await import('../../pages/Login.jsx')).default;
+    const Login = (await import('../pages/Login.jsx')).default;
     renderWithAuth(<Login />);
 
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy();
   });
 
   it('has email and password fields', async () => {
-    const Login = (await import('../../pages/Login.jsx')).default;
+    const Login = (await import('../pages/Login.jsx')).default;
     renderWithAuth(<Login />);
 
     expect(screen.getByLabelText(/email/i)).toBeTruthy();
@@ -127,7 +126,7 @@ describe('Login page', () => {
   });
 
   it('has a submit button', async () => {
-    const Login = (await import('../../pages/Login.jsx')).default;
+    const Login = (await import('../pages/Login.jsx')).default;
     renderWithAuth(<Login />);
 
     expect(screen.getByRole('button', { name: /đăng nhập|login/i })).toBeTruthy();
@@ -138,7 +137,7 @@ describe('Login page', () => {
 
 describe('Sidebar role-based navigation', () => {
   it('shows admin-only links when role is admin', async () => {
-    const Sidebar = (await import('../../components/layout/Sidebar.jsx')).default;
+    const Sidebar = (await import('../components/layout/Sidebar.jsx')).default;
     const adminUser = {
       id: 1,
       full_name: 'Admin',
@@ -158,7 +157,7 @@ describe('Sidebar role-based navigation', () => {
   });
 
   it('does not show admin links for employee role', async () => {
-    const Sidebar = (await import('../../components/layout/Sidebar.jsx')).default;
+    const Sidebar = (await import('../components/layout/Sidebar.jsx')).default;
     const empUser = {
       id: 2,
       full_name: 'Employee',
@@ -182,7 +181,7 @@ describe('Sidebar role-based navigation', () => {
 
 describe('Dashboard role-based rendering', () => {
   it('renders admin widgets when role is admin', async () => {
-    const Dashboard = (await import('../../pages/Dashboard.jsx')).default;
+    const Dashboard = (await import('../pages/Dashboard.jsx')).default;
     const adminUser = {
       id: 1,
       full_name: 'Admin User',
@@ -201,7 +200,7 @@ describe('Dashboard role-based rendering', () => {
   });
 
   it('renders employee balance widget when role is employee', async () => {
-    const Dashboard = (await import('../../pages/Dashboard.jsx')).default;
+    const Dashboard = (await import('../pages/Dashboard.jsx')).default;
     const empUser = {
       id: 2,
       full_name: 'Regular Employee',
@@ -217,4 +216,3 @@ describe('Dashboard role-based rendering', () => {
     });
   });
 });
-
