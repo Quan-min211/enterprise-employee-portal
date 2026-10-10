@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { departmentsApi } from '../api/departmentsApi';
+import { employeesApi } from '../api/employeesApi';
 import { leavesApi } from '../api/leavesApi';
 import Pagination from '../components/Pagination';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,6 +26,8 @@ const initialFilters = {
   request_type: '',
   leave_type: '',
   department_id: '',
+  user_id: '',
+  search: '',
   date_from: '',
   date_to: ''
 };
@@ -45,6 +48,7 @@ export default function LeaveRequests() {
 
   const [requests, setRequests] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [filters, setFilters] = useState(initialFilters);
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
@@ -110,6 +114,28 @@ export default function LeaveRequests() {
         .catch((err) => pushToast(err.message || 'Không thể tải danh sách phòng ban.', 'error'));
     }
   }, [isAdmin, pushToast]);
+
+  useEffect(() => {
+    if (isManager) {
+      const params = { limit: 50 };
+      if (!isAdmin && user?.department_id) {
+        params.department_id = user.department_id;
+      } else if (isAdmin && filters.department_id) {
+        params.department_id = filters.department_id;
+      }
+      employeesApi.list(params)
+        .then((res) => setEmployees(res.employees || []))
+        .catch(() => setEmployees([]));
+    }
+  }, [isManager, isAdmin, user?.department_id, filters.department_id]);
+
+  const handleDepartmentChange = (deptId) => {
+    setFilters((curr) => ({
+      ...curr,
+      department_id: deptId,
+      user_id: ''
+    }));
+  };
 
   const handleFilterSubmit = (e) => {
     e.preventDefault();
@@ -223,13 +249,13 @@ export default function LeaveRequests() {
         </section>
       </header>
 
-      {/* Filter panel */}
-      <search aria-label="Bộ lọc tìm kiếm đơn nghỉ phép">
+      {/* Bộ lọc đơn nghỉ phép & OT */}
+      <search aria-label="Bộ lọc tìm kiếm đơn nghỉ phép và tăng ca">
         <form className="panel filter-panel" onSubmit={handleFilterSubmit}>
           <fieldset>
-            <legend className="visually-hidden">Tùy chọn lọc đơn</legend>
-            <section className="form-grid leave-filter-grid">
-              <section className="field-group">
+            <legend className="visually-hidden">Tùy chọn lọc đơn nghỉ phép và làm thêm giờ</legend>
+            <div className="leave-filter-grid">
+              <p className="field-group">
                 <label htmlFor="filter-status">Trạng thái</label>
                 <select
                   id="filter-status"
@@ -242,9 +268,9 @@ export default function LeaveRequests() {
                   <option value="rejected">Từ chối</option>
                   <option value="cancelled">Đã hủy</option>
                 </select>
-              </section>
+              </p>
 
-              <section className="field-group">
+              <p className="field-group">
                 <label htmlFor="filter-req-type">Nhóm yêu cầu</label>
                 <select
                   id="filter-req-type"
@@ -255,31 +281,51 @@ export default function LeaveRequests() {
                   <option value="leave">Nghỉ phép</option>
                   <option value="overtime">Làm thêm giờ (OT)</option>
                 </select>
-              </section>
+              </p>
 
-              <section className="field-group">
-                <label htmlFor="filter-leave-type">Loại phép</label>
+              <p className="field-group">
+                <label htmlFor="filter-leave-type">Loại đơn chi tiết</label>
                 <select
                   id="filter-leave-type"
                   value={filters.leave_type}
                   onChange={(e) => setFilters((curr) => ({ ...curr, leave_type: e.target.value }))}
                 >
-                  <option value="">Tất cả loại phép</option>
+                  <option value="">Tất cả loại đơn</option>
                   <option value="annual">Phép năm</option>
                   <option value="sick">Nghỉ ốm / Khám bệnh</option>
                   <option value="unpaid">Nghỉ không lương</option>
-                  <option value="overtime">Tăng ca</option>
-                  <option value="other">Khác</option>
+                  <option value="overtime">Tăng ca (OT)</option>
+                  <option value="other">Lý do khác</option>
                 </select>
-              </section>
+              </p>
+
+              <p className="field-group">
+                <label htmlFor="filter-date-from">Từ ngày</label>
+                <input
+                  id="filter-date-from"
+                  type="date"
+                  value={filters.date_from}
+                  onChange={(e) => setFilters((curr) => ({ ...curr, date_from: e.target.value }))}
+                />
+              </p>
+
+              <p className="field-group">
+                <label htmlFor="filter-date-to">Đến ngày</label>
+                <input
+                  id="filter-date-to"
+                  type="date"
+                  value={filters.date_to}
+                  onChange={(e) => setFilters((curr) => ({ ...curr, date_to: e.target.value }))}
+                />
+              </p>
 
               {isAdmin && (
-                <section className="field-group">
+                <p className="field-group">
                   <label htmlFor="filter-dept">Phòng ban</label>
                   <select
                     id="filter-dept"
                     value={filters.department_id}
-                    onChange={(e) => setFilters((curr) => ({ ...curr, department_id: e.target.value }))}
+                    onChange={(e) => handleDepartmentChange(e.target.value)}
                   >
                     <option value="">Tất cả phòng ban</option>
                     {departments.map((dept) => (
@@ -288,45 +334,65 @@ export default function LeaveRequests() {
                       </option>
                     ))}
                   </select>
-                </section>
+                </p>
               )}
 
-              <section className="field-group">
-                <label htmlFor="filter-date-from">Từ ngày</label>
-                <input
-                  id="filter-date-from"
-                  type="date"
-                  value={filters.date_from}
-                  onChange={(e) => setFilters((curr) => ({ ...curr, date_from: e.target.value }))}
-                />
-              </section>
+              {isManager && (
+                <p className="field-group">
+                  <label htmlFor="filter-user">Nhân viên</label>
+                  <select
+                    id="filter-user"
+                    value={filters.user_id}
+                    onChange={(e) => setFilters((curr) => ({ ...curr, user_id: e.target.value }))}
+                  >
+                    <option value="">Tất cả nhân viên</option>
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.full_name} ({emp.employee_code})
+                      </option>
+                    ))}
+                  </select>
+                </p>
+              )}
 
-              <section className="field-group">
-                <label htmlFor="filter-date-to">Đến ngày</label>
-                <input
-                  id="filter-date-to"
-                  type="date"
-                  value={filters.date_to}
-                  onChange={(e) => setFilters((curr) => ({ ...curr, date_to: e.target.value }))}
-                />
-              </section>
-            </section>
+              {isManager && (
+                <p className="field-group">
+                  <label htmlFor="filter-search">Tìm theo tên / mã NV</label>
+                  <input
+                    id="filter-search"
+                    type="search"
+                    placeholder="Tên hoặc mã NV..."
+                    value={filters.search}
+                    onChange={(e) => setFilters((curr) => ({ ...curr, search: e.target.value }))}
+                  />
+                </p>
+              )}
+            </div>
 
-            <section className="filter-actions">
-              <button type="submit" className="btn btn-primary">
-                Lọc dữ liệu
-              </button>
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="btn btn-secondary"
-              >
-                Đặt lại
-              </button>
-              <data value={meta.total} className="shift-stat">
-                Tìm thấy <strong>{meta.total}</strong> đơn
-              </data>
-            </section>
+            <menu className="filter-actions">
+              <li>
+                <button type="submit" className="btn btn-primary">
+                  Lọc dữ liệu
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="btn btn-secondary"
+                >
+                  Đặt lại
+                </button>
+              </li>
+              <li>
+                <output
+                  htmlFor="filter-status filter-req-type filter-leave-type filter-date-from filter-date-to filter-dept filter-user filter-search"
+                  className="shift-stat"
+                >
+                  Tìm thấy <strong>{meta.total}</strong> đơn
+                </output>
+              </li>
+            </menu>
           </fieldset>
         </form>
       </search>

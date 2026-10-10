@@ -98,6 +98,14 @@ const buildLeaveFilters = async (req) => {
     where.user_id = Number(req.query.user_id);
   }
 
+  if (req.query.search && req.user.role !== 'employee') {
+    const searchKeyword = `%${req.query.search.trim()}%`;
+    applicantWhere[Op.or] = [
+      { full_name: { [Op.like]: searchKeyword } },
+      { employee_code: { [Op.like]: searchKeyword } }
+    ];
+  }
+
   if (req.query.status) {
     where.status = req.query.status;
   }
