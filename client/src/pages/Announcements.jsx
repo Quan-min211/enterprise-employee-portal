@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { announcementsApi } from '../api/announcementsApi';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Pagination from '../components/Pagination';
+import { EmptyState } from '../components/TableSkeleton';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
+
 
 const emptyForm = { title: '', content: '', priority: 'normal', expires_at: '' };
 
@@ -92,13 +94,30 @@ export default function Announcements() {
         </fieldset></form>
       </dialog>}
 
-      {loading ? <p>Dang tai thong bao...</p> : announcements.length === 0 ? <p className="empty-state">Hien chua co thong bao nao.</p> : <section className="stack" aria-label="Danh sach thong bao">
-        {announcements.map((ann) => <article key={ann.id} className={`announcement-card ${ann.priority}`}>
-          <header><section><h2>{ann.title}</h2><time dateTime={ann.created_at}>{new Date(ann.created_at).toLocaleDateString('vi-VN')} | Boi: {ann.author?.full_name || 'Ban Quan Tri'}</time></section><mark className={`badge badge-${ann.priority}`}>{ann.priority}</mark></header>
-          <p>{ann.content}</p>
-          {isPublisher && canEdit(ann) && <footer className="action-row"><button type="button" className="btn btn-secondary compact-button" onClick={() => openEdit(ann)}>Sua</button><button type="button" className="btn btn-secondary compact-button danger-text" onClick={() => setDeleteTarget(ann)}>Xoa</button></footer>}
-        </article>)}
-      </section>}
+      {loading ? (
+        <section className="stack" aria-label="Đang tải thông báo" aria-busy="true">
+          {Array.from({ length: 3 }, (_, i) => (
+            <article key={i} className="announcement-card skeleton-card" aria-hidden="true">
+              <span className="skeleton skeleton-title" style={{ width: '60%' }} />
+              <span className="skeleton skeleton-line" style={{ marginTop: '8px', height: '14px', width: '100%' }} />
+              <span className="skeleton skeleton-line" style={{ marginTop: '6px', height: '14px', width: '80%' }} />
+            </article>
+          ))}
+        </section>
+      ) : announcements.length === 0 ? (
+        <EmptyState
+          title="Hiện chưa có thông báo nào"
+          description="Chưa có tin tức hoặc thông báo nội bộ. Quản lý có thể đăng thông báo mới."
+        />
+      ) : (
+        <section className="stack" aria-label="Danh sach thong bao">
+          {announcements.map((ann) => <article key={ann.id} className={`announcement-card ${ann.priority}`}>
+            <header><section><h2>{ann.title}</h2><time dateTime={ann.created_at}>{new Date(ann.created_at).toLocaleDateString('vi-VN')} | Boi: {ann.author?.full_name || 'Ban Quan Tri'}</time></section><mark className={`badge badge-${ann.priority}`}>{ann.priority}</mark></header>
+            <p>{ann.content}</p>
+            {isPublisher && canEdit(ann) && <footer className="action-row"><button type="button" className="btn btn-secondary compact-button" onClick={() => openEdit(ann)}>Sua</button><button type="button" className="btn btn-secondary compact-button danger-text" onClick={() => setDeleteTarget(ann)}>Xoa</button></footer>}
+          </article>)}
+        </section>
+      )}
       <Pagination page={page} totalPages={meta.totalPages} total={meta.total} limit={10} onChange={fetchAnnouncements} />
       <ConfirmDialog open={Boolean(deleteTarget)} title="Xoa thong bao?" message={deleteTarget ? `Thong bao "${deleteTarget.title}" se bi xoa vinh vien.` : ''} confirmLabel="Xoa thong bao" danger onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />
     </section>

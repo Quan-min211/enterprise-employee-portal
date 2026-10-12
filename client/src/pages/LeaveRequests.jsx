@@ -3,8 +3,10 @@ import { departmentsApi } from '../api/departmentsApi';
 import { employeesApi } from '../api/employeesApi';
 import { leavesApi } from '../api/leavesApi';
 import Pagination from '../components/Pagination';
+import TableSkeleton, { EmptyState } from '../components/TableSkeleton';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+
 
 const leaveLabels = {
   annual: 'Phép năm',
@@ -399,23 +401,19 @@ export default function LeaveRequests() {
 
       {/* Main Table */}
       {loading ? (
-        <section className="table-shell" aria-busy="true" aria-label="Đang tải dữ liệu đơn">
-          <p className="skeleton skeleton-title"></p>
-          <p className="skeleton skeleton-card"></p>
-          <p className="skeleton skeleton-card"></p>
-        </section>
+        <TableSkeleton
+          columns={['Mã đơn', 'Người nộp', 'Phòng ban', 'Phân loại', 'Thời gian', 'Số ngày', 'Lý do', 'Trạng thái', 'Thao tác']}
+          rows={5}
+          label="Đang tải danh sách đơn nghỉ phép"
+        />
       ) : requests.length === 0 ? (
-        <figure className="empty-state" role="status">
-          <figcaption>
-            <strong className="empty-title">Không tìm thấy đơn nào</strong>
-            <p className="muted">
-              Không có bản ghi phù hợp với điều kiện lọc hiện tại. Thử thay đổi điều kiện hoặc tạo đơn mới.
-            </p>
-          </figcaption>
-        </figure>
+        <EmptyState
+          title="Không tìm thấy đơn nào"
+          description="Không có bản ghi phù hợp với điều kiện lọc hiện tại. Thử thay đổi điều kiện hoặc tạo đơn mới."
+        />
       ) : (
         <section className="table-shell" aria-label="Bảng danh sách đơn nghỉ phép và tăng ca">
-          <table>
+          <table className="responsive-table">
             <caption>Lịch sử đơn nghỉ phép và làm thêm giờ</caption>
             <thead>
               <tr>
@@ -433,33 +431,33 @@ export default function LeaveRequests() {
             <tbody>
               {requests.map((request) => (
                 <tr key={request.id}>
-                  <td>
+                  <td data-label="Mã đơn">
                     <code>#{request.id}</code>
                   </td>
-                  <td>
+                  <td data-label="Người nộp">
                     <strong>{request.applicant?.full_name || 'N/A'}</strong>
                     <br />
                     <small className="muted">{request.applicant?.employee_code}</small>
                   </td>
-                  <td>
+                  <td data-label="Phòng ban">
                     {request.applicant?.department?.name || (
                       <span className="muted">Chưa phân bổ</span>
                     )}
                   </td>
-                  <td>
+                  <td data-label="Phân loại">
                     <strong>
                       {request.request_type === 'overtime' ? 'Tăng ca' : 'Nghỉ phép'}
                     </strong>
                     <br />
                     <small className="muted">{leaveLabels[request.leave_type] || request.leave_type}</small>
                   </td>
-                  <td>
+                  <td data-label="Thời gian">
                     <time dateTime={request.start_date}>{request.start_date}</time>
                     <br />
                     <small className="muted">đến</small>{' '}
                     <time dateTime={request.end_date}>{request.end_date}</time>
                   </td>
-                  <td>
+                  <td data-label="Số ngày">
                     <strong>{Number(request.day_count || 0)}</strong> ngày
                     {request.ot_hours && (
                       <small className="muted" style={{ display: 'block' }}>
@@ -467,7 +465,7 @@ export default function LeaveRequests() {
                       </small>
                     )}
                   </td>
-                  <td>
+                  <td data-label="Lý do">
                     <p className="table-reason-text">{request.reason}</p>
                     {request.manager_comment && (
                       <small className="manager-note">
@@ -475,13 +473,13 @@ export default function LeaveRequests() {
                       </small>
                     )}
                   </td>
-                  <td>
+                  <td data-label="Trạng thái">
                     <mark className={`badge badge-${request.status}`}>
                       {statusLabels[request.status] || request.status}
                     </mark>
                   </td>
                   {isManager && (
-                    <td>
+                    <td data-label="Thao tác">
                       {request.status === 'pending' ? (
                         <section className="action-row">
                           <button
@@ -510,7 +508,7 @@ export default function LeaveRequests() {
                   )}
                   {/* Nút hủy cho nhân viên với đơn pending của chính mình */}
                   {!isManager && request.user_id === user?.id && request.status === 'pending' && (
-                    <td>
+                    <td data-label="Thao tác">
                       <button
                         type="button"
                         onClick={() => handleCancel(request.id)}

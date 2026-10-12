@@ -1,12 +1,20 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 
-export default function Header({ onMenuToggle }) {
+export default function Header({ sidebarOpen = false, onMenuToggle }) {
   const { user, logout } = useAuth();
 
   return (
     <header className="topbar">
-      <button type="button" className="menu-toggle" onClick={onMenuToggle} aria-label="Mo menu dieu huong">Menu</button>
+      <button
+        type="button"
+        className="menu-toggle"
+        onClick={onMenuToggle}
+        aria-label={sidebarOpen ? 'Đóng menu điều hướng' : 'Mở menu điều hướng'}
+        aria-expanded={Boolean(sidebarOpen)}
+      >
+        Menu
+      </button>
       <section className="brand-row" aria-label="Nhan dien he thong">
         <strong className="brand-name">FU SHENG PORTAL</strong>
         <mark className="badge badge-normal">INTRANET</mark>

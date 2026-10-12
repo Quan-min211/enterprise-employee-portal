@@ -3,6 +3,7 @@ import { departmentsApi } from '../api/departmentsApi';
 import { employeesApi } from '../api/employeesApi';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Pagination from '../components/Pagination';
+import TableSkeleton, { EmptyState } from '../components/TableSkeleton';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 
@@ -350,23 +351,69 @@ export default function Employees() {
 
       {fetchError && <aside className="alert" role="alert"><p>{fetchError}</p><button type="button" className="btn btn-secondary compact-button" onClick={() => fetchEmployees(filters, page)}>Tải lại</button></aside>}
 
-      {loading ? <EmployeeTableSkeleton /> : employees.length === 0 ? (
-        <section className="empty-state" aria-live="polite"><strong className="empty-title">Không tìm thấy nhân viên phù hợp</strong><p>Hãy thử điều chỉnh từ khóa hoặc bộ lọc phòng ban.</p></section>
+      {loading ? (
+        <TableSkeleton
+          columns={tableColumns}
+          rows={8}
+          label="Đang tải danh bạ nhân viên..."
+        />
+      ) : employees.length === 0 ? (
+        <EmptyState
+          title="Không tìm thấy nhân viên phù hợp"
+          description="Hãy thử điều chỉnh từ khóa hoặc bộ lọc phòng ban."
+        />
       ) : (
         <section className="table-shell" aria-label="Bảng danh bạ nhân viên">
-          <table>
+          <table className="responsive-table">
             <caption>Danh sách cán bộ công nhân viên công ty</caption>
-            <thead><tr>{tableColumns.map((column) => <th scope="col" key={column}>{column}</th>)}</tr></thead>
+            <thead>
+              <tr>
+                {tableColumns.map((column) => (
+                  <th scope="col" key={column}>{column}</th>
+                ))}
+              </tr>
+            </thead>
             <tbody>
               {employees.map((employee) => (
                 <tr key={employee.id}>
-                  <td><code>{employee.employee_code}</code></td>
-                  <td><strong>{employee.full_name}</strong></td>
-                  <td>{employee.department?.name || 'Chưa phân bổ'}</td>
-                  <td>{employee.position || 'Nhân viên'}</td>
-                  <td><a href={`mailto:${employee.email}`}>{employee.email}</a></td>
-                  <td>{employee.phone || 'Chưa cập nhật'}</td>
-                  <td><section className="action-row"><button type="button" className="btn btn-secondary compact-button" onClick={() => openEmployeeProfile(employee.id)}>Xem</button>{isAdmin && <button type="button" className="btn btn-secondary compact-button" onClick={() => openEditEmployee(employee)}>Sửa</button>}{isAdmin && employee.id !== user?.id && <button type="button" className="btn btn-secondary compact-button danger-text" onClick={() => setDeactivateTarget(employee)}>Khóa</button>}</section></td>
+                  <td data-label="Mã NV"><code>{employee.employee_code}</code></td>
+                  <td data-label="Họ và tên"><strong>{employee.full_name}</strong></td>
+                  <td data-label="Phòng ban">{employee.department?.name || 'Chưa phân bổ'}</td>
+                  <td data-label="Chức vụ">{employee.position || 'Nhân viên'}</td>
+                  <td data-label="Email"><a href={`mailto:${employee.email}`}>{employee.email}</a></td>
+                  <td data-label="Điện thoại">{employee.phone || 'Chưa cập nhật'}</td>
+                  <td data-label="Thao tác">
+                    <section className="action-row">
+                      <button
+                        type="button"
+                        className="btn btn-secondary compact-button"
+                        onClick={() => openEmployeeProfile(employee.id)}
+                        aria-label={`Xem hồ sơ của ${employee.full_name}`}
+                      >
+                        Xem
+                      </button>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary compact-button"
+                          onClick={() => openEditEmployee(employee)}
+                          aria-label={`Sửa thông tin của ${employee.full_name}`}
+                        >
+                          Sửa
+                        </button>
+                      )}
+                      {isAdmin && employee.id !== user?.id && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary compact-button danger-text"
+                          onClick={() => setDeactivateTarget(employee)}
+                          aria-label={`Khóa tài khoản ${employee.full_name}`}
+                        >
+                          Khóa
+                        </button>
+                      )}
+                    </section>
+                  </td>
                 </tr>
               ))}
             </tbody>

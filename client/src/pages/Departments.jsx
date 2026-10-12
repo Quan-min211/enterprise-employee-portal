@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import TableSkeleton, { EmptyState } from '../components/TableSkeleton';
 import { departmentsApi } from '../api/departmentsApi';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -189,7 +190,9 @@ export default function Departments() {
         <article className="panel">
           <h2>Danh Sach Phong Ban</h2>
           {loading ? (
-            <p>Dang tai phong ban...</p>
+            <TableSkeleton rows={4} label="Đang tải danh sách phòng ban" />
+          ) : departments.length === 0 ? (
+            <EmptyState title="Chưa có phòng ban" description="Hãy tạo phòng ban đầu tiên bằng biểu mẫu bên trái." />
           ) : (
             <section className="department-list" aria-label="Danh sach phong ban hien co">
               {departments.map((department) => (

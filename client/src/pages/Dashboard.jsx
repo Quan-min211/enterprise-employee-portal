@@ -374,7 +374,7 @@ export default function Dashboard() {
           </figure>
         ) : (
           <section className="table-shell" aria-label="Bảng các hoạt động kiểm toán gần nhất">
-            <table className="admin-audit-table">
+            <table className="admin-audit-table responsive-table">
               <caption className="visually-hidden">Danh sách hoạt động kiểm toán gần nhất</caption>
               <thead>
                 <tr>
@@ -390,7 +390,7 @@ export default function Dashboard() {
                   const act = formatAuditAction(log.action);
                   return (
                     <tr key={log.id}>
-                      <td>
+                      <td data-label="Thời gian">
                         <time dateTime={log.created_at}>
                           {new Date(log.created_at).toLocaleString('vi-VN', {
                             hour: '2-digit',
@@ -400,18 +400,18 @@ export default function Dashboard() {
                           })}
                         </time>
                       </td>
-                      <td>
+                      <td data-label="Người thực hiện">
                         <strong>{log.actor?.full_name || 'Hệ thống'}</strong>
                         <br />
                         <small className="muted">{log.actor?.employee_code || 'SYSTEM'}</small>
                       </td>
-                      <td>
+                      <td data-label="Hành động">
                         <mark className={`badge ${act.className}`}>{act.label}</mark>
                       </td>
-                      <td>
+                      <td data-label="Đối tượng">
                         <small className="muted">{log.entity_type}</small>
                       </td>
-                      <td>
+                      <td data-label="Chi tiết">
                         <small>{formatAuditDetails(log)}</small>
                       </td>
                     </tr>
@@ -525,7 +525,7 @@ export default function Dashboard() {
               <p className="muted">Chưa có người dùng mới được tạo.</p>
             ) : (
               <section className="table-shell" aria-label="Danh sách tài khoản người dùng mới tạo">
-                <table>
+                <table className="responsive-table">
                   <caption className="visually-hidden">Tài khoản mới tạo</caption>
                   <thead>
                     <tr>
@@ -539,21 +539,21 @@ export default function Dashboard() {
                   <tbody>
                     {recentUsers.map((u) => (
                       <tr key={u.id}>
-                        <td>
+                        <td data-label="Mã NV">
                           <mark className="code-text">{u.employee_code}</mark>
                         </td>
-                        <td>
+                        <td data-label="Họ và tên">
                           <strong>{u.full_name}</strong>
                           <br />
                           <small className="muted">{u.email}</small>
                         </td>
-                        <td>
+                        <td data-label="Phòng ban">
                           <small>{u.department?.name || 'Nhà máy'}</small>
                         </td>
-                        <td>
+                        <td data-label="Vai trò">
                           <mark className={`badge badge-${u.role}`}>{roleLabels[u.role] || u.role}</mark>
                         </td>
-                        <td>
+                        <td data-label="Trạng thái">
                           <mark className={`badge ${u.status === 'active' ? 'badge-success' : 'badge-danger'}`}>
                             {u.status === 'active' ? 'Hoạt động' : 'Tạm khóa'}
                           </mark>
@@ -1042,7 +1042,7 @@ export default function Dashboard() {
             </figure>
           ) : (
             <section className="table-shell" aria-label="Bảng các đơn gần đây">
-              <table>
+              <table className="responsive-table">
                 <caption className="visually-hidden">Danh sách đơn gần đây</caption>
                 <thead>
                   <tr>
@@ -1056,7 +1056,7 @@ export default function Dashboard() {
                   {stats.recentLeaves.map((req) => (
                     <tr key={req.id}>
                       {!isEmployee && (
-                        <td>
+                        <td data-label="Người nộp">
                           <strong>{req.applicant?.full_name || 'N/A'}</strong>
                           <br />
                           <small className="muted">
@@ -1064,17 +1064,17 @@ export default function Dashboard() {
                           </small>
                         </td>
                       )}
-                      <td>
+                      <td data-label="Loại">
                         <small>
                           {req.request_type === 'overtime'
                             ? 'Tăng ca'
                             : leaveLabels[req.leave_type] || req.leave_type}
                         </small>
                       </td>
-                      <td>
+                      <td data-label="Từ ngày">
                         <small>{req.start_date}</small>
                       </td>
-                      <td>
+                      <td data-label="Trạng thái">
                         <mark className={`badge badge-${req.status}`}>
                           {statusLabels[req.status] || req.status}
                         </mark>

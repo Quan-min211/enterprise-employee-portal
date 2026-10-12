@@ -90,6 +90,17 @@ function ProtectedLayout() {
   const { user, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [sidebarOpen]);
+
   if (loading) {
     return (
       <>
@@ -107,9 +118,16 @@ function ProtectedLayout() {
 
   return (
     <section className="app-shell" aria-label="Enterprise Employee Portal">
-      <Header onMenuToggle={() => setSidebarOpen((open) => !open)} />
+      <Header
+        sidebarOpen={sidebarOpen}
+        onMenuToggle={() => setSidebarOpen((open) => !open)}
+      />
       <section className="app-body">
-        <Sidebar open={sidebarOpen} onNavigate={() => setSidebarOpen(false)} />
+        <Sidebar
+          open={sidebarOpen}
+          onNavigate={() => setSidebarOpen(false)}
+          onClose={() => setSidebarOpen(false)}
+        />
         <main className="app-main">
           <DocumentTitle />
           <Suspense fallback={<PageLoadingFallback />}>
