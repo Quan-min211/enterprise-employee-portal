@@ -1,4 +1,5 @@
 import React from 'react';
+import { Menu, LogOut } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function Header({ sidebarOpen = false, onMenuToggle }) {
@@ -13,6 +14,7 @@ export default function Header({ sidebarOpen = false, onMenuToggle }) {
         aria-label={sidebarOpen ? 'Đóng menu điều hướng' : 'Mở menu điều hướng'}
         aria-expanded={Boolean(sidebarOpen)}
       >
+        <Menu size={18} aria-hidden="true" />
         Menu
       </button>
       <section className="brand-row" aria-label="Nhan dien he thong">
@@ -33,6 +35,7 @@ export default function Header({ sidebarOpen = false, onMenuToggle }) {
               className="btn btn-secondary compact-button"
               aria-label="Dang xuat khoi he thong"
             >
+              <LogOut size={15} aria-hidden="true" />
               Dang xuat
             </button>
           </article>

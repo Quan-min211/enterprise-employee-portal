@@ -1,4 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import {
+  Plus,
+  Save,
+  RotateCcw,
+  Pencil,
+  Trash2
+} from 'lucide-react';
 import TableSkeleton, { EmptyState } from '../components/TableSkeleton';
 import { departmentsApi } from '../api/departmentsApi';
 import { useAuth } from '../contexts/AuthContext';
@@ -175,11 +182,22 @@ export default function Departments() {
 
               <section className="action-row">
                 <button type="submit" className="btn btn-primary">
-                  {editingId ? 'Luu thay doi' : 'Tao phong ban'}
+                  {editingId ? (
+                    <>
+                      <Save size={15} aria-hidden="true" />
+                      Lưu thay đổi
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={15} aria-hidden="true" />
+                      Tạo phòng ban
+                    </>
+                  )}
                 </button>
                 {editingId && (
                   <button type="button" className="btn btn-secondary" onClick={resetForm}>
-                    Huy sua
+                    <RotateCcw size={15} aria-hidden="true" />
+                    Hủy sửa
                   </button>
                 )}
               </section>
@@ -207,10 +225,12 @@ export default function Departments() {
                   <p>{department.description || 'Chua co mo ta phong ban.'}</p>
                   <footer className="action-row">
                     <button type="button" className="btn btn-secondary compact-button" onClick={() => handleEdit(department)}>
-                      Sua
+                      <Pencil size={14} aria-hidden="true" />
+                      Sửa
                     </button>
                     <button type="button" className="btn btn-secondary compact-button danger-text" onClick={() => handleDelete(department)}>
-                      Xoa
+                      <Trash2 size={14} aria-hidden="true" />
+                      Xóa
                     </button>
                   </footer>
                 </article>

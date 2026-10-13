@@ -1,5 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  ShieldCheck,
+  Users,
+  Building2,
+  CalendarClock,
+  FilePlus,
+  Clock,
+  Download
+} from 'lucide-react';
 import { dashboardApi } from '../api/dashboardApi';
 import { leaveBalancesApi } from '../api/leavesApi';
 import { useAuth } from '../contexts/AuthContext';
@@ -706,43 +715,67 @@ export default function Dashboard() {
       {isAdmin ? (
         <nav className="quick-actions-grid" aria-label="Lối tắt quản trị hệ thống">
           <Link to="/audit-logs" className="quick-action-link highlight">
-            <strong>🛡️ Nhật Ký Hệ Thống</strong>
+            <strong>
+              <mark className="quick-action-icon" aria-hidden="true"><ShieldCheck size={18} /></mark>
+              Nhật Ký Hệ Thống
+            </strong>
             <small>
               Tra cứu lịch sử thao tác & kiểm toán ({stats.adminData?.audit?.todayCount || 0} log hôm nay)
             </small>
           </Link>
           <Link to="/employees" className="quick-action-link">
-            <strong>👥 Quản Lý Tài Khoản</strong>
+            <strong>
+              <mark className="quick-action-icon" aria-hidden="true"><Users size={18} /></mark>
+              Quản Lý Tài Khoản
+            </strong>
             <small>Thêm nhân sự mới, phân quyền vai trò & mở/khóa tài khoản</small>
           </Link>
           <Link to="/departments" className="quick-action-link">
-            <strong>🏢 Quản Trị Phòng Ban</strong>
+            <strong>
+              <mark className="quick-action-icon" aria-hidden="true"><Building2 size={18} /></mark>
+              Quản Trị Phòng Ban
+            </strong>
             <small>Cơ cấu tổ chức nhà máy & bổ nhiệm trưởng bộ phận ({stats.totalDepartments} PB)</small>
           </Link>
           <Link to="/leaves" className="quick-action-link">
-            <strong>📋 Giám Sát Đơn Phép & OT</strong>
+            <strong>
+              <mark className="quick-action-icon" aria-hidden="true"><CalendarClock size={18} /></mark>
+              Giám Sát Đơn Phép & OT
+            </strong>
             <small>Tổng hợp đối soát đơn nghỉ và tăng ca toàn nhà máy ({stats.leaveStatus.pending} chờ duyệt)</small>
           </Link>
         </nav>
       ) : (
         <nav className="quick-actions-grid" aria-label="Lối tắt thao tác nhanh">
           <Link to="/leaves" className="quick-action-link">
-            <strong>📝 Đăng Ký Đơn Mới</strong>
+            <strong>
+              <mark className="quick-action-icon" aria-hidden="true"><FilePlus size={18} /></mark>
+              Đăng Ký Đơn Mới
+            </strong>
             <small>Nộp đề xuất nghỉ phép hoặc làm thêm giờ trực tuyến</small>
           </Link>
           <Link to="/employees" className="quick-action-link">
-            <strong>👥 Tra Cứu Danh Bạ</strong>
+            <strong>
+              <mark className="quick-action-icon" aria-hidden="true"><Users size={18} /></mark>
+              Tra Cứu Danh Bạ
+            </strong>
             <small>Tìm kiếm danh bạ nhân sự và thông tin liên lạc</small>
           </Link>
           {isPureManager && (
             <Link to="/leaves" className="quick-action-link highlight">
-              <strong>⚡ Duyệt Đơn Chờ ({stats.leaveStatus.pending})</strong>
+              <strong>
+                <mark className="quick-action-icon" aria-hidden="true"><Clock size={18} /></mark>
+                Duyệt Đơn Chờ ({stats.leaveStatus.pending})
+              </strong>
               <small>Xử lý cấp tốc các yêu cầu nghỉ phép đang chờ phê duyệt</small>
             </Link>
           )}
           {isPureManager && (
             <Link to="/leaves" className="quick-action-link">
-              <strong>📊 Xuất Báo Cáo CSV</strong>
+              <strong>
+                <mark className="quick-action-icon" aria-hidden="true"><Download size={18} /></mark>
+                Xuất Báo Cáo CSV
+              </strong>
               <small>Lọc dữ liệu và trích xuất báo cáo nhân sự theo thời gian</small>
             </Link>
           )}

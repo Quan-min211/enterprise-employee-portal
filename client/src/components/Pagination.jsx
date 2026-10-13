@@ -1,4 +1,5 @@
 import React from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function Pagination({ page, totalPages, total, limit, onChange }) {
   if (!totalPages || totalPages <= 1) return null;
@@ -9,9 +10,27 @@ export default function Pagination({ page, totalPages, total, limit, onChange })
     <nav className="pagination" aria-label="Phan trang danh sach">
       <p>Hien thi {first}-{last} / {total} ket qua</p>
       <section className="action-row">
-        <button type="button" className="btn btn-secondary compact-button" disabled={page <= 1} onClick={() => onChange(page - 1)}>Truoc</button>
+        <button
+          type="button"
+          className="btn btn-secondary compact-button"
+          disabled={page <= 1}
+          onClick={() => onChange(page - 1)}
+          aria-label="Trang trước"
+        >
+          <ChevronLeft size={16} aria-hidden="true" />
+          Trước
+        </button>
         <output aria-label="Trang hien tai">Trang {page} / {totalPages}</output>
-        <button type="button" className="btn btn-secondary compact-button" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>Sau</button>
+        <button
+          type="button"
+          className="btn btn-secondary compact-button"
+          disabled={page >= totalPages}
+          onClick={() => onChange(page + 1)}
+          aria-label="Trang sau"
+        >
+          Sau
+          <ChevronRight size={16} aria-hidden="true" />
+        </button>
       </section>
     </nav>
   );

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { LogIn } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
@@ -72,7 +73,14 @@ export default function Login() {
               disabled={loading}
               className="btn btn-primary full-width"
             >
-              {loading ? 'Đang xác thực...' : 'Đăng nhập vào hệ thống'}
+              {loading ? (
+                'Đang xác thực...'
+              ) : (
+                <>
+                  <LogIn size={16} aria-hidden="true" />
+                  Đăng nhập vào hệ thống
+                </>
+              )}
             </button>
           </fieldset>
         </form>

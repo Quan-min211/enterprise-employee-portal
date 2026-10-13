@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Filter, ScrollText } from 'lucide-react';
 import { auditLogsApi } from '../api/auditLogsApi';
 import Pagination from '../components/Pagination';
 import TableSkeleton, { EmptyState } from '../components/TableSkeleton';
@@ -49,14 +50,17 @@ export default function AuditLogs() {
             <p className="field-group"><label htmlFor="audit_from">Tu ngay</label><input id="audit_from" type="date" value={filters.date_from} onChange={(event) => setFilters({ ...filters, date_from: event.target.value })} /></p>
             <p className="field-group"><label htmlFor="audit_to">Den ngay</label><input id="audit_to" type="date" value={filters.date_to} onChange={(event) => setFilters({ ...filters, date_to: event.target.value })} /></p>
           </section>
-          <button type="submit" className="btn btn-primary">Loc nhat ky</button>
+          <button type="submit" className="btn btn-primary">
+            <Filter size={15} aria-hidden="true" />
+            Lọc nhật ký
+          </button>
         </fieldset>
       </form>
 
       {loading ? (
         <TableSkeleton columns={AUDIT_COLUMNS} rows={6} label="Đang tải nhật ký hệ thống" />
       ) : logs.length === 0 ? (
-        <EmptyState title="Chưa có bản ghi" description="Không tìm thấy nhật ký phù hợp với điều kiện lọc." />
+        <EmptyState icon={ScrollText} title="Chưa có bản ghi" description="Không tìm thấy nhật ký phù hợp với điều kiện lọc." />
       ) : (
         <section className="table-shell admin-audit-table" aria-label="Bang nhat ky he thong">
           <table className="responsive-table">

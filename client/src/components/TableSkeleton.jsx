@@ -1,4 +1,5 @@
 import React from 'react';
+import { Inbox } from 'lucide-react';
 
 /**
  * Shared skeleton loader cho bảng dữ liệu.
@@ -39,10 +40,18 @@ export default function TableSkeleton({ columns = [], rows = 5, label = 'Đang t
 /**
  * Shared empty-state cho kết quả rỗng.
  */
-export function EmptyState({ title = 'Không có dữ liệu', description = 'Không tìm thấy bản ghi phù hợp.', action }) {
+export function EmptyState({
+  icon: Icon = Inbox,
+  title = 'Không có dữ liệu',
+  description = 'Không tìm thấy bản ghi phù hợp.',
+  action
+}) {
   return (
     <figure className="empty-state" role="status">
       <figcaption>
+        <mark className="empty-state-icon" aria-hidden="true">
+          <Icon size={36} strokeWidth={1.5} />
+        </mark>
         <strong className="empty-title">{title}</strong>
         {description && <p className="muted">{description}</p>}
         {action}

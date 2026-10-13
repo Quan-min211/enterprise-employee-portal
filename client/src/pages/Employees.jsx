@@ -1,4 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
+import {
+  Search,
+  Plus,
+  Eye,
+  Pencil,
+  UserX,
+  RefreshCw
+} from 'lucide-react';
 import { departmentsApi } from '../api/departmentsApi';
 import { employeesApi } from '../api/employeesApi';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -331,7 +339,10 @@ export default function Employees() {
               <option value="">Tất cả phòng ban</option>
               {departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}
             </select>
-            <button type="submit" className="btn btn-primary">Tìm kiếm</button>
+            <button type="submit" className="btn btn-primary">
+              <Search size={15} aria-hidden="true" />
+              Tìm kiếm
+            </button>
           </form>
         </search>
       </header>
@@ -343,13 +354,26 @@ export default function Employees() {
             <fieldset disabled={submitting}>
               <legend className="visually-hidden">Thông tin tài khoản nhân viên mới</legend>
               <EmployeeFormFields form={employeeForm} departments={departments} onChange={updateCreateForm} />
-              <footer className="action-row"><button type="submit" className="btn btn-primary">{submitting ? 'Đang tạo...' : 'Tạo nhân viên'}</button></footer>
+              <footer className="action-row">
+                <button type="submit" className="btn btn-primary">
+                  <Plus size={15} aria-hidden="true" />
+                  {submitting ? 'Đang tạo...' : 'Tạo nhân viên'}
+                </button>
+              </footer>
             </fieldset>
           </form>
         </section>
       )}
 
-      {fetchError && <aside className="alert" role="alert"><p>{fetchError}</p><button type="button" className="btn btn-secondary compact-button" onClick={() => fetchEmployees(filters, page)}>Tải lại</button></aside>}
+      {fetchError && (
+        <aside className="alert" role="alert">
+          <p>{fetchError}</p>
+          <button type="button" className="btn btn-secondary compact-button" onClick={() => fetchEmployees(filters, page)}>
+            <RefreshCw size={14} aria-hidden="true" />
+            Tải lại
+          </button>
+        </aside>
+      )}
 
       {loading ? (
         <TableSkeleton
@@ -390,6 +414,7 @@ export default function Employees() {
                         onClick={() => openEmployeeProfile(employee.id)}
                         aria-label={`Xem hồ sơ của ${employee.full_name}`}
                       >
+                        <Eye size={14} aria-hidden="true" />
                         Xem
                       </button>
                       {isAdmin && (
@@ -399,6 +424,7 @@ export default function Employees() {
                           onClick={() => openEditEmployee(employee)}
                           aria-label={`Sửa thông tin của ${employee.full_name}`}
                         >
+                          <Pencil size={14} aria-hidden="true" />
                           Sửa
                         </button>
                       )}
@@ -409,6 +435,7 @@ export default function Employees() {
                           onClick={() => setDeactivateTarget(employee)}
                           aria-label={`Khóa tài khoản ${employee.full_name}`}
                         >
+                          <UserX size={14} aria-hidden="true" />
                           Khóa
                         </button>
                       )}

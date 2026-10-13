@@ -1,4 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
+import {
+  Plus,
+  Download,
+  Filter,
+  RotateCcw,
+  Check,
+  X,
+  Ban
+} from 'lucide-react';
 import { departmentsApi } from '../api/departmentsApi';
 import { employeesApi } from '../api/employeesApi';
 import { leavesApi } from '../api/leavesApi';
@@ -236,6 +245,7 @@ export default function LeaveRequests() {
             onClick={() => setShowCreateModal(true)}
             className="btn btn-primary"
           >
+            <Plus size={16} aria-hidden="true" />
             Tạo đơn mới
           </button>
           {isManager && (
@@ -245,6 +255,7 @@ export default function LeaveRequests() {
               disabled={isExporting}
               className="btn btn-secondary"
             >
+              <Download size={16} aria-hidden="true" />
               {isExporting ? 'Đang xuất CSV...' : 'Xuất báo cáo CSV'}
             </button>
           )}
@@ -374,6 +385,7 @@ export default function LeaveRequests() {
             <menu className="filter-actions">
               <li>
                 <button type="submit" className="btn btn-primary">
+                  <Filter size={15} aria-hidden="true" />
                   Lọc dữ liệu
                 </button>
               </li>
@@ -383,6 +395,7 @@ export default function LeaveRequests() {
                   onClick={handleResetFilters}
                   className="btn btn-secondary"
                 >
+                  <RotateCcw size={15} aria-hidden="true" />
                   Đặt lại
                 </button>
               </li>
@@ -488,6 +501,7 @@ export default function LeaveRequests() {
                             className="btn btn-primary compact-button"
                             aria-label={`Duyệt đơn số ${request.id} của ${request.applicant?.full_name}`}
                           >
+                            <Check size={14} aria-hidden="true" />
                             Duyệt
                           </button>
                           <button
@@ -496,6 +510,7 @@ export default function LeaveRequests() {
                             className="btn btn-secondary compact-button danger-text"
                             aria-label={`Từ chối đơn số ${request.id} của ${request.applicant?.full_name}`}
                           >
+                            <X size={14} aria-hidden="true" />
                             Từ chối
                           </button>
                         </section>
@@ -515,6 +530,7 @@ export default function LeaveRequests() {
                         className="btn btn-secondary compact-button danger-text"
                         aria-label={`Hủy đơn số ${request.id}`}
                       >
+                        <Ban size={14} aria-hidden="true" />
                         Hủy đơn
                       </button>
                     </td>

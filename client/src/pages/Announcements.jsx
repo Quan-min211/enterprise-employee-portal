@@ -1,4 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import {
+  Plus,
+  Save,
+  Pencil,
+  Trash2,
+  Megaphone
+} from 'lucide-react';
 import { announcementsApi } from '../api/announcementsApi';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Pagination from '../components/Pagination';
@@ -80,7 +87,12 @@ export default function Announcements() {
         <section className="toolbar" aria-label="Cong cu bang tin">
           <label htmlFor="priority-filter" className="visually-hidden">Loc muc uu tien</label>
           <select id="priority-filter" value={priority} onChange={(event) => setPriority(event.target.value)}><option value="">Tat ca muc uu tien</option><option value="urgent">Urgent</option><option value="important">Important</option><option value="normal">Normal</option></select>
-          {isPublisher && <button type="button" onClick={openCreate} className="btn btn-primary">Dang thong bao moi</button>}
+          {isPublisher && (
+            <button type="button" onClick={openCreate} className="btn btn-primary">
+              <Plus size={16} aria-hidden="true" />
+              Đăng thông báo mới
+            </button>
+          )}
         </section>
       </header>
 
@@ -90,7 +102,22 @@ export default function Announcements() {
           <section className="field-group"><label htmlFor="ann_title">Tieu de thong bao</label><input id="ann_title" required minLength={5} value={formData.title} onChange={(event) => setFormData({ ...formData, title: event.target.value })} /></section>
           <section className="form-grid"><section className="field-group"><label htmlFor="ann_priority">Muc uu tien</label><select id="ann_priority" value={formData.priority} onChange={(event) => setFormData({ ...formData, priority: event.target.value })}><option value="normal">Normal</option><option value="important">Important</option><option value="urgent">Urgent</option></select></section><section className="field-group"><label htmlFor="ann_expires_at">Ngay het han</label><input id="ann_expires_at" type="date" value={formData.expires_at} onChange={(event) => setFormData({ ...formData, expires_at: event.target.value })} /></section></section>
           <section className="field-group"><label htmlFor="ann_content">Noi dung chi tiet</label><textarea id="ann_content" required rows={5} minLength={10} value={formData.content} onChange={(event) => setFormData({ ...formData, content: event.target.value })} /></section>
-          <footer className="action-row"><button type="button" onClick={() => setDialogOpen(false)} className="btn btn-secondary">Huy</button><button type="submit" className="btn btn-primary">{editing ? 'Luu thay doi' : 'Dang thong bao'}</button></footer>
+          <footer className="action-row">
+            <button type="button" onClick={() => setDialogOpen(false)} className="btn btn-secondary">Huy</button>
+            <button type="submit" className="btn btn-primary">
+              {editing ? (
+                <>
+                  <Save size={15} aria-hidden="true" />
+                  Lưu thay đổi
+                </>
+              ) : (
+                <>
+                  <Plus size={15} aria-hidden="true" />
+                  Đăng thông báo
+                </>
+              )}
+            </button>
+          </footer>
         </fieldset></form>
       </dialog>}
 
@@ -98,14 +125,15 @@ export default function Announcements() {
         <section className="stack" aria-label="Đang tải thông báo" aria-busy="true">
           {Array.from({ length: 3 }, (_, i) => (
             <article key={i} className="announcement-card skeleton-card" aria-hidden="true">
-              <span className="skeleton skeleton-title" style={{ width: '60%' }} />
-              <span className="skeleton skeleton-line" style={{ marginTop: '8px', height: '14px', width: '100%' }} />
-              <span className="skeleton skeleton-line" style={{ marginTop: '6px', height: '14px', width: '80%' }} />
+              <mark className="skeleton skeleton-title" style={{ width: '60%' }} />
+              <mark className="skeleton skeleton-line" style={{ marginTop: '8px', height: '14px', width: '100%' }} />
+              <mark className="skeleton skeleton-line" style={{ marginTop: '6px', height: '14px', width: '80%' }} />
             </article>
           ))}
         </section>
       ) : announcements.length === 0 ? (
         <EmptyState
+          icon={Megaphone}
           title="Hiện chưa có thông báo nào"
           description="Chưa có tin tức hoặc thông báo nội bộ. Quản lý có thể đăng thông báo mới."
         />
@@ -114,7 +142,18 @@ export default function Announcements() {
           {announcements.map((ann) => <article key={ann.id} className={`announcement-card ${ann.priority}`}>
             <header><section><h2>{ann.title}</h2><time dateTime={ann.created_at}>{new Date(ann.created_at).toLocaleDateString('vi-VN')} | Boi: {ann.author?.full_name || 'Ban Quan Tri'}</time></section><mark className={`badge badge-${ann.priority}`}>{ann.priority}</mark></header>
             <p>{ann.content}</p>
-            {isPublisher && canEdit(ann) && <footer className="action-row"><button type="button" className="btn btn-secondary compact-button" onClick={() => openEdit(ann)}>Sua</button><button type="button" className="btn btn-secondary compact-button danger-text" onClick={() => setDeleteTarget(ann)}>Xoa</button></footer>}
+            {isPublisher && canEdit(ann) && (
+              <footer className="action-row">
+                <button type="button" className="btn btn-secondary compact-button" onClick={() => openEdit(ann)}>
+                  <Pencil size={14} aria-hidden="true" />
+                  Sửa
+                </button>
+                <button type="button" className="btn btn-secondary compact-button danger-text" onClick={() => setDeleteTarget(ann)}>
+                  <Trash2 size={14} aria-hidden="true" />
+                  Xóa
+                </button>
+              </footer>
+            )}
           </article>)}
         </section>
       )}

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Save, KeyRound } from 'lucide-react';
 import { employeesApi } from '../api/employeesApi';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -118,7 +119,10 @@ export default function Profile() {
                   onChange={(e) => setProfileForm({ ...profileForm, avatar_url: e.target.value })}
                 />
               </section>
-              <button type="submit" className="btn btn-primary">Lưu hồ sơ</button>
+              <button type="submit" className="btn btn-primary">
+                <Save size={16} aria-hidden="true" />
+                Lưu hồ sơ
+              </button>
             </fieldset>
           </form>
         </article>
@@ -149,7 +153,10 @@ export default function Profile() {
                   onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
                 />
               </section>
-              <button type="submit" className="btn btn-secondary">Đổi mật khẩu</button>
+              <button type="submit" className="btn btn-secondary">
+                <KeyRound size={16} aria-hidden="true" />
+                Đổi mật khẩu
+              </button>
             </fieldset>
           </form>
         </article>
