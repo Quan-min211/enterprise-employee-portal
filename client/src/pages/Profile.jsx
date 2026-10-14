@@ -58,10 +58,10 @@ export default function Profile() {
   return (
     <section aria-labelledby="profile-heading">
       <header className="page-header">
-        <section>
+        <hgroup>
           <h1 id="profile-heading">Hồ Sơ Cá Nhân</h1>
           <p>Xem và cập nhật thông tin liên lạc cá nhân trong cổng thông tin nội bộ.</p>
-        </section>
+        </hgroup>
       </header>
 
       {message && <aside className="alert success-alert" aria-live="polite">{message}</aside>}
@@ -93,7 +93,7 @@ export default function Profile() {
           <form onSubmit={handleProfileSubmit}>
             <fieldset>
               <legend className="visually-hidden">Thông tin liên lạc</legend>
-              <section className="field-group">
+              <p className="field-group">
                 <label htmlFor="profile_full_name">Họ và tên</label>
                 <input
                   id="profile_full_name"
@@ -101,16 +101,16 @@ export default function Profile() {
                   value={profileForm.full_name}
                   onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })}
                 />
-              </section>
-              <section className="field-group">
+              </p>
+              <p className="field-group">
                 <label htmlFor="profile_phone">Số điện thoại</label>
                 <input
                   id="profile_phone"
                   value={profileForm.phone}
                   onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
                 />
-              </section>
-              <section className="field-group">
+              </p>
+              <p className="field-group">
                 <label htmlFor="profile_avatar">Avatar URL</label>
                 <input
                   id="profile_avatar"
@@ -118,11 +118,13 @@ export default function Profile() {
                   value={profileForm.avatar_url}
                   onChange={(e) => setProfileForm({ ...profileForm, avatar_url: e.target.value })}
                 />
-              </section>
-              <button type="submit" className="btn btn-primary">
-                <Save size={16} aria-hidden="true" />
-                Lưu hồ sơ
-              </button>
+              </p>
+              <footer className="action-row">
+                <button type="submit" className="btn btn-primary">
+                  <Save size={16} aria-hidden="true" />
+                  Lưu hồ sơ
+                </button>
+              </footer>
             </fieldset>
           </form>
         </article>
@@ -132,7 +134,7 @@ export default function Profile() {
           <form onSubmit={handlePasswordSubmit}>
             <fieldset>
               <legend className="visually-hidden">Đổi mật khẩu tài khoản</legend>
-              <section className="field-group">
+              <p className="field-group">
                 <label htmlFor="current_password">Mật khẩu hiện tại</label>
                 <input
                   id="current_password"
@@ -141,8 +143,8 @@ export default function Profile() {
                   value={passwordForm.current_password}
                   onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
                 />
-              </section>
-              <section className="field-group">
+              </p>
+              <p className="field-group">
                 <label htmlFor="new_password">Mật khẩu mới</label>
                 <input
                   id="new_password"
@@ -152,11 +154,13 @@ export default function Profile() {
                   value={passwordForm.new_password}
                   onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
                 />
-              </section>
-              <button type="submit" className="btn btn-secondary">
-                <KeyRound size={16} aria-hidden="true" />
-                Đổi mật khẩu
-              </button>
+              </p>
+              <footer className="action-row">
+                <button type="submit" className="btn btn-secondary">
+                  <KeyRound size={16} aria-hidden="true" />
+                  Đổi mật khẩu
+                </button>
+              </footer>
             </fieldset>
           </form>
         </article>

@@ -30,8 +30,10 @@ export default function Login() {
     <main className="login-screen">
       <article className="login-card">
         <header>
-          <h1>Đăng Nhập Cổng Nội Bộ</h1>
-          <p>Công ty TNHH Công nghiệp Fu Sheng (Việt Nam)</p>
+          <hgroup>
+            <h1>Đăng Nhập Cổng Nội Bộ</h1>
+            <p>Công ty TNHH Công nghiệp Fu Sheng (Việt Nam)</p>
+          </hgroup>
         </header>
 
         {error && (
@@ -44,7 +46,7 @@ export default function Login() {
           <fieldset>
             <legend className="visually-hidden">Thông tin xác thực</legend>
 
-            <section className="field-group">
+            <p className="field-group">
               <label htmlFor="email">Email công vụ</label>
               <input
                 id="email"
@@ -54,9 +56,9 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-            </section>
+            </p>
 
-            <section className="field-group">
+            <p className="field-group">
               <label htmlFor="password">Mật khẩu</label>
               <input
                 id="password"
@@ -66,22 +68,24 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-            </section>
+            </p>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary full-width"
-            >
-              {loading ? (
-                'Đang xác thực...'
-              ) : (
-                <>
-                  <LogIn size={16} aria-hidden="true" />
-                  Đăng nhập vào hệ thống
-                </>
-              )}
-            </button>
+            <footer className="action-row">
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn btn-primary full-width"
+              >
+                {loading ? (
+                  'Đang xác thực...'
+                ) : (
+                  <>
+                    <LogIn size={16} aria-hidden="true" />
+                    Đăng nhập vào hệ thống
+                  </>
+                )}
+              </button>
+            </footer>
           </fieldset>
         </form>
 

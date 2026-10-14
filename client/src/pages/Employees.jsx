@@ -32,8 +32,8 @@ const tableColumns = ['Mã NV', 'Họ và tên', 'Phòng ban', 'Chức vụ', 'E
 
 function EmployeeFormFields({ form, departments, isEditing, onChange }) {
   return (
-    <section className="employee-form-grid">
-      <section className="field-group">
+    <div className="employee-form-grid">
+      <p className="field-group">
         <label htmlFor={`${isEditing ? 'edit' : 'create'}-employee-code`}>Mã nhân viên</label>
         <input
           id={`${isEditing ? 'edit' : 'create'}-employee-code`}
@@ -43,9 +43,9 @@ function EmployeeFormFields({ form, departments, isEditing, onChange }) {
           value={form.employee_code}
           onChange={(event) => onChange('employee_code', event.target.value.toUpperCase())}
         />
-      </section>
+      </p>
 
-      <section className="field-group">
+      <p className="field-group">
         <label htmlFor={`${isEditing ? 'edit' : 'create'}-employee-name`}>Họ và tên</label>
         <input
           id={`${isEditing ? 'edit' : 'create'}-employee-name`}
@@ -56,9 +56,9 @@ function EmployeeFormFields({ form, departments, isEditing, onChange }) {
           value={form.full_name}
           onChange={(event) => onChange('full_name', event.target.value)}
         />
-      </section>
+      </p>
 
-      <section className="field-group">
+      <p className="field-group">
         <label htmlFor={`${isEditing ? 'edit' : 'create'}-employee-email`}>Email công việc</label>
         <input
           id={`${isEditing ? 'edit' : 'create'}-employee-email`}
@@ -69,9 +69,9 @@ function EmployeeFormFields({ form, departments, isEditing, onChange }) {
           value={form.email}
           onChange={(event) => onChange('email', event.target.value)}
         />
-      </section>
+      </p>
 
-      <section className="field-group">
+      <p className="field-group">
         <label htmlFor={`${isEditing ? 'edit' : 'create'}-employee-phone`}>Số điện thoại</label>
         <input
           id={`${isEditing ? 'edit' : 'create'}-employee-phone`}
@@ -81,9 +81,9 @@ function EmployeeFormFields({ form, departments, isEditing, onChange }) {
           value={form.phone}
           onChange={(event) => onChange('phone', event.target.value)}
         />
-      </section>
+      </p>
 
-      <section className="field-group">
+      <p className="field-group">
         <label htmlFor={`${isEditing ? 'edit' : 'create'}-employee-role`}>Vai trò</label>
         <select
           id={`${isEditing ? 'edit' : 'create'}-employee-role`}
@@ -94,9 +94,9 @@ function EmployeeFormFields({ form, departments, isEditing, onChange }) {
           <option value="manager">Quản lý</option>
           <option value="admin">Quản trị viên</option>
         </select>
-      </section>
+      </p>
 
-      <section className="field-group">
+      <p className="field-group">
         <label htmlFor={`${isEditing ? 'edit' : 'create'}-employee-department`}>Phòng ban</label>
         <select
           id={`${isEditing ? 'edit' : 'create'}-employee-department`}
@@ -108,9 +108,9 @@ function EmployeeFormFields({ form, departments, isEditing, onChange }) {
             <option key={department.id} value={department.id}>{department.name}</option>
           ))}
         </select>
-      </section>
+      </p>
 
-      <section className="field-group">
+      <p className="field-group">
         <label htmlFor={`${isEditing ? 'edit' : 'create'}-employee-position`}>Chức vụ</label>
         <input
           id={`${isEditing ? 'edit' : 'create'}-employee-position`}
@@ -118,9 +118,9 @@ function EmployeeFormFields({ form, departments, isEditing, onChange }) {
           value={form.position}
           onChange={(event) => onChange('position', event.target.value)}
         />
-      </section>
+      </p>
 
-      <section className="field-group">
+      <p className="field-group">
         <label htmlFor={`${isEditing ? 'edit' : 'create'}-employee-hire-date`}>Ngày vào làm</label>
         <input
           id={`${isEditing ? 'edit' : 'create'}-employee-hire-date`}
@@ -128,19 +128,19 @@ function EmployeeFormFields({ form, departments, isEditing, onChange }) {
           value={form.hire_date}
           onChange={(event) => onChange('hire_date', event.target.value)}
         />
-      </section>
+      </p>
 
       {isEditing && (
-        <section className="field-group">
+        <p className="field-group">
           <label htmlFor="edit-employee-status">Trạng thái tài khoản</label>
           <select id="edit-employee-status" value={form.status} onChange={(event) => onChange('status', event.target.value)}>
             <option value="active">Đang hoạt động</option>
             <option value="inactive">Đã khóa</option>
           </select>
-        </section>
+        </p>
       )}
 
-      <section className="field-group">
+      <p className="field-group">
         <label htmlFor={`${isEditing ? 'edit' : 'create'}-employee-password`}>
           {isEditing ? 'Mật khẩu mới (để trống nếu không đổi)' : 'Mật khẩu tạm thời'}
         </label>
@@ -153,8 +153,8 @@ function EmployeeFormFields({ form, departments, isEditing, onChange }) {
           value={form.password}
           onChange={(event) => onChange('password', event.target.value)}
         />
-      </section>
-    </section>
+      </p>
+    </div>
   );
 }
 
@@ -315,10 +315,10 @@ export default function Employees() {
   return (
     <section aria-labelledby="employees-heading">
       <header className="page-header">
-        <section>
+        <hgroup>
           <h1 id="employees-heading">Danh bạ nhân viên</h1>
           <p>Tra cứu thông tin liên lạc, phòng ban và chức vụ của cán bộ công nhân viên Fu Sheng.</p>
-        </section>
+        </hgroup>
 
         <search>
           <form className="search-form" onSubmit={handleSearch}>
@@ -407,7 +407,7 @@ export default function Employees() {
                   <td data-label="Email"><a href={`mailto:${employee.email}`}>{employee.email}</a></td>
                   <td data-label="Điện thoại">{employee.phone || 'Chưa cập nhật'}</td>
                   <td data-label="Thao tác">
-                    <section className="action-row">
+                    <div className="action-row">
                       <button
                         type="button"
                         className="btn btn-secondary compact-button"
@@ -439,7 +439,7 @@ export default function Employees() {
                           Khóa
                         </button>
                       )}
-                    </section>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -452,7 +452,13 @@ export default function Employees() {
 
       <dialog ref={profileDialogRef} className="dialog" aria-labelledby="employee-profile-dialog-title">
         {selectedEmployee && <>
-          <header className="dialog-header"><section><h2 id="employee-profile-dialog-title">{selectedEmployee.full_name}</h2><p><code>{selectedEmployee.employee_code}</code> · {selectedEmployee.position || 'Nhân viên'}</p></section><button type="button" autoFocus className="btn btn-secondary compact-button" onClick={() => setSelectedEmployee(null)} aria-label="Đóng hồ sơ nhân viên">Đóng</button></header>
+          <header className="dialog-header">
+            <hgroup>
+              <h2 id="employee-profile-dialog-title">{selectedEmployee.full_name}</h2>
+              <p><code>{selectedEmployee.employee_code}</code> · {selectedEmployee.position || 'Nhân viên'}</p>
+            </hgroup>
+            <button type="button" autoFocus className="btn btn-secondary compact-button" onClick={() => setSelectedEmployee(null)} aria-label="Đóng hồ sơ nhân viên">Đóng</button>
+          </header>
           <dl className="detail-list">
             <dt>Phòng ban</dt><dd>{selectedEmployee.department?.name || 'Chưa phân bổ'}</dd>
             <dt>Email</dt><dd><a href={`mailto:${selectedEmployee.email}`}>{selectedEmployee.email}</a></dd>
@@ -468,7 +474,13 @@ export default function Employees() {
         {editingEmployee && <form onSubmit={handleUpdateEmployee}>
           <fieldset disabled={submitting}>
             <legend className="visually-hidden">Chỉnh sửa thông tin nhân viên</legend>
-            <header className="dialog-header"><section><h2 id="employee-edit-dialog-title">Chỉnh sửa nhân viên</h2><p><code>{editingEmployee.employee_code}</code></p></section><button type="button" className="btn btn-secondary compact-button" onClick={() => setEditingEmployee(null)}>Đóng</button></header>
+            <header className="dialog-header">
+              <hgroup>
+                <h2 id="employee-edit-dialog-title">Chỉnh sửa nhân viên</h2>
+                <p><code>{editingEmployee.employee_code}</code></p>
+              </hgroup>
+              <button type="button" className="btn btn-secondary compact-button" onClick={() => setEditingEmployee(null)}>Đóng</button>
+            </header>
             <EmployeeFormFields form={editForm} departments={departments} isEditing onChange={updateEditForm} />
             <footer className="action-row"><button type="button" className="btn btn-secondary" onClick={() => setEditingEmployee(null)}>Hủy</button><button type="submit" className="btn btn-primary">{submitting ? 'Đang lưu...' : 'Lưu thay đổi'}</button></footer>
           </fieldset>

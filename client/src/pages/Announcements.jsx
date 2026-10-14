@@ -83,8 +83,11 @@ export default function Announcements() {
   return (
     <section aria-labelledby="news-heading">
       <header className="page-header">
-        <section><h1 id="news-heading">Bang Tin & Thong Bao Cong Ty</h1><p>Cac tin tuc chinh sach, an toan nha may va su kien noi bo Fu Sheng.</p></section>
-        <section className="toolbar" aria-label="Cong cu bang tin">
+        <hgroup>
+          <h1 id="news-heading">Bang Tin & Thong Bao Cong Ty</h1>
+          <p>Cac tin tuc chinh sach, an toan nha may va su kien noi bo Fu Sheng.</p>
+        </hgroup>
+        <div className="toolbar" role="toolbar" aria-label="Công cụ bảng tin">
           <label htmlFor="priority-filter" className="visually-hidden">Loc muc uu tien</label>
           <select id="priority-filter" value={priority} onChange={(event) => setPriority(event.target.value)}><option value="">Tat ca muc uu tien</option><option value="urgent">Urgent</option><option value="important">Important</option><option value="normal">Normal</option></select>
           {isPublisher && (
@@ -93,15 +96,18 @@ export default function Announcements() {
               Đăng thông báo mới
             </button>
           )}
-        </section>
+        </div>
       </header>
 
       {dialogOpen && <dialog open className="dialog" aria-labelledby="announcement-dialog-title">
         <h2 id="announcement-dialog-title">{editing ? 'Sua Thong Bao' : 'Tao Thong Bao Moi'}</h2>
         <form onSubmit={handleSubmit}><fieldset><legend className="visually-hidden">Thong tin thong bao noi bo</legend>
-          <section className="field-group"><label htmlFor="ann_title">Tieu de thong bao</label><input id="ann_title" required minLength={5} value={formData.title} onChange={(event) => setFormData({ ...formData, title: event.target.value })} /></section>
-          <section className="form-grid"><section className="field-group"><label htmlFor="ann_priority">Muc uu tien</label><select id="ann_priority" value={formData.priority} onChange={(event) => setFormData({ ...formData, priority: event.target.value })}><option value="normal">Normal</option><option value="important">Important</option><option value="urgent">Urgent</option></select></section><section className="field-group"><label htmlFor="ann_expires_at">Ngay het han</label><input id="ann_expires_at" type="date" value={formData.expires_at} onChange={(event) => setFormData({ ...formData, expires_at: event.target.value })} /></section></section>
-          <section className="field-group"><label htmlFor="ann_content">Noi dung chi tiet</label><textarea id="ann_content" required rows={5} minLength={10} value={formData.content} onChange={(event) => setFormData({ ...formData, content: event.target.value })} /></section>
+          <p className="field-group"><label htmlFor="ann_title">Tieu de thong bao</label><input id="ann_title" required minLength={5} value={formData.title} onChange={(event) => setFormData({ ...formData, title: event.target.value })} /></p>
+          <div className="form-grid">
+            <p className="field-group"><label htmlFor="ann_priority">Muc uu tien</label><select id="ann_priority" value={formData.priority} onChange={(event) => setFormData({ ...formData, priority: event.target.value })}><option value="normal">Normal</option><option value="important">Important</option><option value="urgent">Urgent</option></select></p>
+            <p className="field-group"><label htmlFor="ann_expires_at">Ngay het han</label><input id="ann_expires_at" type="date" value={formData.expires_at} onChange={(event) => setFormData({ ...formData, expires_at: event.target.value })} /></p>
+          </div>
+          <p className="field-group"><label htmlFor="ann_content">Noi dung chi tiet</label><textarea id="ann_content" required rows={5} minLength={10} value={formData.content} onChange={(event) => setFormData({ ...formData, content: event.target.value })} /></p>
           <footer className="action-row">
             <button type="button" onClick={() => setDialogOpen(false)} className="btn btn-secondary">Huy</button>
             <button type="submit" className="btn btn-primary">
@@ -140,7 +146,13 @@ export default function Announcements() {
       ) : (
         <section className="stack" aria-label="Danh sach thong bao">
           {announcements.map((ann) => <article key={ann.id} className={`announcement-card ${ann.priority}`}>
-            <header><section><h2>{ann.title}</h2><time dateTime={ann.created_at}>{new Date(ann.created_at).toLocaleDateString('vi-VN')} | Boi: {ann.author?.full_name || 'Ban Quan Tri'}</time></section><mark className={`badge badge-${ann.priority}`}>{ann.priority}</mark></header>
+            <header>
+              <hgroup>
+                <h2>{ann.title}</h2>
+                <time dateTime={ann.created_at}>{new Date(ann.created_at).toLocaleDateString('vi-VN')} | Boi: {ann.author?.full_name || 'Ban Quan Tri'}</time>
+              </hgroup>
+              <mark className={`badge badge-${ann.priority}`}>{ann.priority}</mark>
+            </header>
             <p>{ann.content}</p>
             {isPublisher && canEdit(ann) && (
               <footer className="action-row">

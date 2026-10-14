@@ -231,15 +231,15 @@ export default function LeaveRequests() {
   return (
     <section aria-labelledby="leaves-heading">
       <header className="page-header">
-        <section>
+        <hgroup>
           <p className="eyebrow">Quy trình nhân sự Fu Sheng</p>
           <h1 id="leaves-heading">Đơn Nghỉ Phép & Làm Thêm Giờ</h1>
           <p>
             Quản lý quy trình đăng ký, tra cứu và phê duyệt đơn nghỉ phép, tăng ca trực tuyến.
           </p>
-        </section>
+        </hgroup>
 
-        <section className="action-row">
+        <menu className="action-row">
           <button
             type="button"
             onClick={() => setShowCreateModal(true)}
@@ -259,7 +259,7 @@ export default function LeaveRequests() {
               {isExporting ? 'Đang xuất CSV...' : 'Xuất báo cáo CSV'}
             </button>
           )}
-        </section>
+        </menu>
       </header>
 
       {/* Bộ lọc đơn nghỉ phép & OT */}
@@ -494,7 +494,7 @@ export default function LeaveRequests() {
                   {isManager && (
                     <td data-label="Thao tác">
                       {request.status === 'pending' ? (
-                        <section className="action-row">
+                        <div className="action-row">
                           <button
                             type="button"
                             onClick={() => setActionTarget({ ...request, status: 'approved' })}
@@ -513,7 +513,7 @@ export default function LeaveRequests() {
                             <X size={14} aria-hidden="true" />
                             Từ chối
                           </button>
-                        </section>
+                        </div>
                       ) : (
                         <small className="muted">
                           {request.approver?.full_name ? `Bởi ${request.approver.full_name}` : 'Đã xử lý'}
@@ -553,15 +553,17 @@ export default function LeaveRequests() {
       {/* Dialog tạo đơn mới */}
       <dialog ref={createDialogRef} className="dialog dialog-wide" aria-labelledby="create-dialog-title">
         <header className="dialog-header">
-          <h2 id="create-dialog-title">Đăng Ký Đơn Nghỉ Phép / Tăng Ca</h2>
-          <p>Điền thông tin chi tiết để gửi cấp quản lý phê duyệt trực tuyến.</p>
+          <hgroup>
+            <h2 id="create-dialog-title">Đăng Ký Đơn Nghỉ Phép / Tăng Ca</h2>
+            <p>Điền thông tin chi tiết để gửi cấp quản lý phê duyệt trực tuyến.</p>
+          </hgroup>
         </header>
         <form onSubmit={handleCreate}>
           <fieldset disabled={submitting}>
             <legend className="visually-hidden">Biểu mẫu đăng ký đơn mới</legend>
 
-            <section className="form-grid">
-              <section className="field-group">
+            <div className="form-grid">
+              <p className="field-group">
                 <label htmlFor="req-type-input">Nhóm yêu cầu</label>
                 <select
                   id="req-type-input"
@@ -577,9 +579,9 @@ export default function LeaveRequests() {
                   <option value="leave">Nghỉ phép</option>
                   <option value="overtime">Làm thêm giờ (OT)</option>
                 </select>
-              </section>
+              </p>
 
-              <section className="field-group">
+              <p className="field-group">
                 <label htmlFor="leave-type-input">Loại phép</label>
                 <select
                   id="leave-type-input"
@@ -593,9 +595,9 @@ export default function LeaveRequests() {
                   <option value="other">Lý do khác</option>
                   <option value="overtime">Làm thêm giờ (OT)</option>
                 </select>
-              </section>
+              </p>
 
-              <section className="field-group">
+              <p className="field-group">
                 <label htmlFor="start-date-input">Từ ngày</label>
                 <input
                   id="start-date-input"
@@ -604,9 +606,9 @@ export default function LeaveRequests() {
                   value={formData.start_date}
                   onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                 />
-              </section>
+              </p>
 
-              <section className="field-group">
+              <p className="field-group">
                 <label htmlFor="end-date-input">Đến ngày</label>
                 <input
                   id="end-date-input"
@@ -615,10 +617,10 @@ export default function LeaveRequests() {
                   value={formData.end_date}
                   onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                 />
-              </section>
-            </section>
+              </p>
+            </div>
 
-            <section className="field-group">
+            <p className="field-group">
               <label htmlFor="reason-input">Lý do cụ thể</label>
               <textarea
                 id="reason-input"
@@ -630,7 +632,7 @@ export default function LeaveRequests() {
                 value={formData.reason}
                 onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
               />
-            </section>
+            </p>
 
             <footer className="action-row">
               <button
@@ -651,15 +653,17 @@ export default function LeaveRequests() {
       {/* Dialog duyệt / từ chối */}
       <dialog ref={actionDialogRef} className="dialog" aria-labelledby="action-dialog-title">
         <header className="dialog-header">
-          <h2 id="action-dialog-title">
-            {actionTarget?.status === 'approved' ? 'Phê Duyệt Đơn' : 'Từ Chối Đơn'}
-          </h2>
-          <p>
-            Đơn của nhân viên <strong>{actionTarget?.applicant?.full_name}</strong> (#{actionTarget?.id}).
-          </p>
+          <hgroup>
+            <h2 id="action-dialog-title">
+              {actionTarget?.status === 'approved' ? 'Phê Duyệt Đơn' : 'Từ Chối Đơn'}
+            </h2>
+            <p>
+              Đơn của nhân viên <strong>{actionTarget?.applicant?.full_name}</strong> (#{actionTarget?.id}).
+            </p>
+          </hgroup>
         </header>
 
-        <section className="field-group">
+        <p className="field-group">
           <label htmlFor="manager-comment-input">Ghi chú phê duyệt (tùy chọn)</label>
           <textarea
             id="manager-comment-input"
@@ -669,7 +673,7 @@ export default function LeaveRequests() {
             value={managerComment}
             onChange={(e) => setManagerComment(e.target.value)}
           />
-        </section>
+        </p>
 
         <footer className="action-row">
           <button

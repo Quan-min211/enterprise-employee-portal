@@ -9,7 +9,7 @@ export default function Pagination({ page, totalPages, total, limit, onChange })
   return (
     <nav className="pagination" aria-label="Phan trang danh sach">
       <p>Hien thi {first}-{last} / {total} ket qua</p>
-      <section className="action-row">
+      <menu className="action-row">
         <button
           type="button"
           className="btn btn-secondary compact-button"
@@ -31,7 +31,7 @@ export default function Pagination({ page, totalPages, total, limit, onChange })
           Sau
           <ChevronRight size={16} aria-hidden="true" />
         </button>
-      </section>
+      </menu>
     </nav>
   );
 }

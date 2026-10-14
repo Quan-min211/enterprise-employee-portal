@@ -34,28 +34,32 @@ export default function AuditLogs() {
   return (
     <section aria-labelledby="audit-heading">
       <header className="page-header">
-        <section>
+        <hgroup>
           <p className="eyebrow">Compliance / Admin only</p>
           <h1 id="audit-heading">Nhat Ky He Thong</h1>
           <p>Tra cuu ai da thuc hien hanh dong nao tren cong thong tin noi bo.</p>
-        </section>
+        </hgroup>
       </header>
 
-      <form className="panel filter-panel" onSubmit={(event) => { event.preventDefault(); fetchLogs(1); }}>
-        <fieldset>
-          <legend className="visually-hidden">Bo loc nhat ky</legend>
-          <section className="form-grid audit-filter-grid">
-            <p className="field-group"><label htmlFor="audit_action">Hanh dong</label><input id="audit_action" value={filters.action} placeholder="VD: auth.login" onChange={(event) => setFilters({ ...filters, action: event.target.value })} /></p>
-            <p className="field-group"><label htmlFor="audit_entity">Doi tuong</label><input id="audit_entity" value={filters.entity_type} placeholder="VD: user" onChange={(event) => setFilters({ ...filters, entity_type: event.target.value })} /></p>
-            <p className="field-group"><label htmlFor="audit_from">Tu ngay</label><input id="audit_from" type="date" value={filters.date_from} onChange={(event) => setFilters({ ...filters, date_from: event.target.value })} /></p>
-            <p className="field-group"><label htmlFor="audit_to">Den ngay</label><input id="audit_to" type="date" value={filters.date_to} onChange={(event) => setFilters({ ...filters, date_to: event.target.value })} /></p>
-          </section>
-          <button type="submit" className="btn btn-primary">
-            <Filter size={15} aria-hidden="true" />
-            Lọc nhật ký
-          </button>
-        </fieldset>
-      </form>
+      <search aria-label="Bộ lọc nhật ký hệ thống">
+        <form className="panel filter-panel" onSubmit={(event) => { event.preventDefault(); fetchLogs(1); }}>
+          <fieldset>
+            <legend className="visually-hidden">Bo loc nhat ky</legend>
+            <div className="form-grid audit-filter-grid">
+              <p className="field-group"><label htmlFor="audit_action">Hanh dong</label><input id="audit_action" value={filters.action} placeholder="VD: auth.login" onChange={(event) => setFilters({ ...filters, action: event.target.value })} /></p>
+              <p className="field-group"><label htmlFor="audit_entity">Doi tuong</label><input id="audit_entity" value={filters.entity_type} placeholder="VD: user" onChange={(event) => setFilters({ ...filters, entity_type: event.target.value })} /></p>
+              <p className="field-group"><label htmlFor="audit_from">Tu ngay</label><input id="audit_from" type="date" value={filters.date_from} onChange={(event) => setFilters({ ...filters, date_from: event.target.value })} /></p>
+              <p className="field-group"><label htmlFor="audit_to">Den ngay</label><input id="audit_to" type="date" value={filters.date_to} onChange={(event) => setFilters({ ...filters, date_to: event.target.value })} /></p>
+            </div>
+            <footer className="action-row">
+              <button type="submit" className="btn btn-primary">
+                <Filter size={15} aria-hidden="true" />
+                Lọc nhật ký
+              </button>
+            </footer>
+          </fieldset>
+        </form>
+      </search>
 
       {loading ? (
         <TableSkeleton columns={AUDIT_COLUMNS} rows={6} label="Đang tải nhật ký hệ thống" />

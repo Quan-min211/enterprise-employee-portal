@@ -17,18 +17,18 @@ export default function Header({ sidebarOpen = false, onMenuToggle }) {
         <Menu size={18} aria-hidden="true" />
         Menu
       </button>
-      <section className="brand-row" aria-label="Nhan dien he thong">
+      <div className="brand-row" aria-label="Nhan dien he thong">
         <strong className="brand-name">FU SHENG PORTAL</strong>
         <mark className="badge badge-normal">INTRANET</mark>
-      </section>
+      </div>
 
-      <section className="header-actions" aria-label="Tai khoan nguoi dung">
+      <nav className="header-actions" aria-label="Tai khoan nguoi dung">
         {user && (
-          <article className="profile-summary" aria-label="Tom tat ho so dang nhap">
-            <section className="profile-copy">
+          <aside className="profile-summary" aria-label="Tom tat ho so dang nhap">
+            <div className="profile-copy">
               <p className="profile-name">{user.full_name}</p>
               <p className="profile-role">{user.role} | {user.position || 'Nhan vien'}</p>
-            </section>
+            </div>
             <button
               type="button"
               onClick={logout}
@@ -38,9 +38,9 @@ export default function Header({ sidebarOpen = false, onMenuToggle }) {
               <LogOut size={15} aria-hidden="true" />
               Dang xuat
             </button>
-          </article>
+          </aside>
         )}
-      </section>
+      </nav>
     </header>
   );
 }

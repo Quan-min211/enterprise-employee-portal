@@ -325,12 +325,12 @@ export default function Dashboard() {
             {sorted.map((ann) => (
               <article key={ann.id} className={`announcement-card ${ann.priority}`}>
                 <header>
-                  <section>
+                  <hgroup>
                     <h3>{ann.title}</h3>
                     <time dateTime={ann.createdAt}>
                       {new Date(ann.createdAt).toLocaleDateString('vi-VN')}
                     </time>
-                  </section>
+                  </hgroup>
                   <data value={ann.priority} className={`badge badge-${ann.priority}`}>
                     {priorityLabels[ann.priority] || ann.priority}
                   </data>
@@ -362,14 +362,14 @@ export default function Dashboard() {
       <section className="panel" aria-labelledby="admin-audit-heading">
         <header className="panel-header">
           <h2 id="admin-audit-heading">🛡️ Hoạt Động Kiểm Toán Gần Đây</h2>
-          <section className="action-row">
+          <div className="action-row">
             <data value={auditData?.todayCount || 0} className="badge badge-info">
               {auditData?.todayCount || 0} hôm nay
             </data>
             <Link to="/audit-logs" className="badge badge-accent">
               Xem tất cả nhật ký →
             </Link>
-          </section>
+          </div>
         </header>
 
         {isLoading ? (
@@ -453,14 +453,14 @@ export default function Dashboard() {
       <section className="panel" aria-labelledby="admin-accounts-heading">
         <header className="panel-header">
           <h2 id="admin-accounts-heading">👥 Phân Bổ & Trạng Thái Tài Khoản</h2>
-          <section className="action-row">
+          <div className="action-row">
             <data value={total} className="badge badge-accent">
               {total} tài khoản
             </data>
             <Link to="/employees" className="badge badge-accent">
               Quản trị tài khoản →
             </Link>
-          </section>
+          </div>
         </header>
 
         {isLoading ? (
@@ -634,11 +634,11 @@ export default function Dashboard() {
                 <ul className="admin-holiday-list" aria-label="Ngày lễ sắp tới">
                   {holidays.map((h) => (
                     <li key={h.id} className="admin-holiday-item">
-                      <section>
+                      <p className="holiday-details">
                         <strong>{h.name}</strong>
                         <br />
                         <small className="muted">{holidayTypeLabels[h.type] || h.type}</small>
-                      </section>
+                      </p>
                       <time dateTime={h.date}>{h.date}</time>
                     </li>
                   ))}
@@ -690,7 +690,7 @@ export default function Dashboard() {
   return (
     <section aria-labelledby="dashboard-heading">
       <header className="page-header">
-        <section>
+        <hgroup>
           <p className="eyebrow">Cổng thông tin nội bộ Fu Sheng</p>
           <h1 id="dashboard-heading">Tổng Quan Hệ Thống</h1>
           <p>
@@ -698,7 +698,7 @@ export default function Dashboard() {
             Vai trò:{' '}
             <mark className="badge badge-accent">{roleLabels[user?.role] || user?.role}</mark>
           </p>
-        </section>
+        </hgroup>
         <aside className="shift-brief" aria-label="Tóm tắt ca vận hành">
           <header>
             <strong>Ca hành chính</strong>
@@ -961,13 +961,13 @@ export default function Dashboard() {
                 {stats.pendingActionItems.map((item) => (
                   <article key={item.id} className="action-item-card">
                     <header>
-                      <section>
+                      <p className="action-item-applicant">
                         <strong>{item.applicant?.full_name || 'Nhân viên'}</strong>
                         <small className="muted">
                           {' '}
                           ({item.applicant?.employee_code || `#${item.id}`})
                         </small>
-                      </section>
+                      </p>
                       <mark className="badge badge-pending">Chờ duyệt</mark>
                     </header>
                     <p className="action-item-desc">
@@ -1124,7 +1124,7 @@ export default function Dashboard() {
         <section className="panel" aria-labelledby="announcements-heading">
           <header className="panel-header">
             <h2 id="announcements-heading">Thông Báo Mới Nhất</h2>
-            <section className="action-row">
+            <div className="action-row">
               <data value={stats.recentAnnouncements.length} className="badge badge-subtle">
                 {stats.recentAnnouncements.length} tin
               </data>
@@ -1133,7 +1133,7 @@ export default function Dashboard() {
                   Quản lý bảng tin →
                 </Link>
               )}
-            </section>
+            </div>
           </header>
           {isLoading ? (
             <SkeletonCards />
@@ -1149,12 +1149,12 @@ export default function Dashboard() {
               {stats.recentAnnouncements.map((ann) => (
                 <article key={ann.id} className={`announcement-card ${ann.priority}`}>
                   <header>
-                    <section>
+                    <hgroup>
                       <h3>{ann.title}</h3>
                       <time dateTime={ann.createdAt}>
                         {new Date(ann.createdAt).toLocaleDateString('vi-VN')}
                       </time>
-                    </section>
+                    </hgroup>
                     <data value={ann.priority} className={`badge badge-${ann.priority}`}>
                       {priorityLabels[ann.priority] || ann.priority}
                     </data>

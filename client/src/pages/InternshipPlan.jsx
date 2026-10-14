@@ -63,14 +63,14 @@ export default function InternshipPlan() {
   return (
     <section aria-labelledby="internship-plan-heading">
       <header className="page-header plan-hero">
-        <section>
+        <hgroup>
           <p className="eyebrow">Kế hoạch thực tập</p>
           <h1 id="internship-plan-heading">Xây Dựng Web Nội Bộ Doanh Nghiệp</h1>
           <p>
             Bản kế hoạch này gồm mục tiêu, phạm vi, tiến độ và tiêu chí nghiệm thu cho đề tài
             Enterprise Employee Portal tại Fu Sheng Vietnam.
           </p>
-        </section>
+        </hgroup>
         <aside className="plan-status" aria-label="Trạng thái hiện tại của đề tài">
           <strong>Đang triển khai</strong>
           <data value="70">70%</data>
@@ -104,10 +104,10 @@ export default function InternshipPlan() {
               <li key={phase.title} className={`timeline-item ${phase.status}`}>
                 <article>
                   <header>
-                    <section>
+                    <hgroup>
                       <h3>{phase.title}</h3>
                       <p>{phase.period}</p>
-                    </section>
+                    </hgroup>
                     <mark
                       className={`badge badge-${
                         phase.status === 'done'

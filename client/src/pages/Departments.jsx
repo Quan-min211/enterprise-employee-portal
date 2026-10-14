@@ -104,10 +104,10 @@ export default function Departments() {
     return (
       <section aria-labelledby="departments-heading">
         <header className="page-header">
-          <section>
+          <hgroup>
             <h1 id="departments-heading">Quan Tri Phong Ban</h1>
             <p>Chi tai khoan admin moi co quyen quan ly danh muc phong ban.</p>
-          </section>
+          </hgroup>
         </header>
         <aside className="alert">Ban khong co quyen truy cap chuc nang nay.</aside>
       </section>
@@ -117,10 +117,10 @@ export default function Departments() {
   return (
     <section aria-labelledby="departments-heading">
       <header className="page-header">
-        <section>
+        <hgroup>
           <h1 id="departments-heading">Quan Tri Phong Ban</h1>
           <p>Quan ly danh muc phong ban, truong bo phan va mo ta nghiep vu trong he thong noi bo.</p>
-        </section>
+        </hgroup>
       </header>
 
       {message && <aside className="alert success-alert" aria-live="polite">{message}</aside>}
@@ -133,8 +133,8 @@ export default function Departments() {
             <fieldset>
               <legend className="visually-hidden">Thong tin phong ban</legend>
 
-              <section className="form-grid">
-                <section className="field-group">
+              <div className="form-grid">
+                <p className="field-group">
                   <label htmlFor="department_code">Ma phong ban</label>
                   <input
                     id="department_code"
@@ -144,9 +144,9 @@ export default function Departments() {
                     value={formData.code}
                     onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                   />
-                </section>
+                </p>
 
-                <section className="field-group">
+                <p className="field-group">
                   <label htmlFor="department_name">Ten phong ban</label>
                   <input
                     id="department_name"
@@ -156,10 +156,10 @@ export default function Departments() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
-                </section>
-              </section>
+                </p>
+              </div>
 
-              <section className="field-group">
+              <p className="field-group">
                 <label htmlFor="department_manager">Truong bo phan</label>
                 <input
                   id="department_manager"
@@ -167,9 +167,9 @@ export default function Departments() {
                   value={formData.manager_name}
                   onChange={(e) => setFormData({ ...formData, manager_name: e.target.value })}
                 />
-              </section>
+              </p>
 
-              <section className="field-group">
+              <p className="field-group">
                 <label htmlFor="department_description">Mo ta</label>
                 <textarea
                   id="department_description"
@@ -178,9 +178,9 @@ export default function Departments() {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
-              </section>
+              </p>
 
-              <section className="action-row">
+              <footer className="action-row">
                 <button type="submit" className="btn btn-primary">
                   {editingId ? (
                     <>
@@ -200,7 +200,7 @@ export default function Departments() {
                     Hủy sửa
                   </button>
                 )}
-              </section>
+              </footer>
             </fieldset>
           </form>
         </article>
@@ -216,10 +216,10 @@ export default function Departments() {
               {departments.map((department) => (
                 <article className="department-item" key={department.id}>
                   <header>
-                    <section>
+                    <hgroup>
                       <h3>{department.name}</h3>
                       <p><code>{department.code}</code> | {department.manager_name || 'Chua gan truong bo phan'}</p>
-                    </section>
+                    </hgroup>
                     <mark className="badge badge-normal">{department.employee_count} NV</mark>
                   </header>
                   <p>{department.description || 'Chua co mo ta phong ban.'}</p>

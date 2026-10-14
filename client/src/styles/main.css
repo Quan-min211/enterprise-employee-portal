@@ -33,6 +33,12 @@ p {
   margin-bottom: var(--space-3);
 }
 
+menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
 a {
   color: var(--accent);
   text-decoration: none;
