@@ -30,7 +30,8 @@ vi.mock('../api/authApi', () => ({
   authApi: {
     me: vi.fn().mockRejectedValue(new Error('Unauthorized')),
     login: vi.fn(),
-    logout: vi.fn()
+    logout: vi.fn(),
+    getCsrfToken: vi.fn().mockResolvedValue({ success: true, csrfToken: 'mock-csrf-token' })
   }
 }));
 

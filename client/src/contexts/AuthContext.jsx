@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authApi } from '../api/authApi';
+import { setCsrfToken } from '../api/axiosClient';
 
 export const AuthContext = createContext(null);
 
@@ -16,6 +17,13 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (err) {
         setUser(null);
+        try {
+          if (authApi.getCsrfToken) {
+            await authApi.getCsrfToken();
+          }
+        } catch {
+          // Ignore probe errors on guest bootstrap
+        }
       } finally {
         setLoading(false);
       }
@@ -37,6 +45,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       console.warn('Logout request failed, clearing local session:', err.message);
     }
+    setCsrfToken(null);
     setUser(null);
   };
 
@@ -56,3 +65,4 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
+

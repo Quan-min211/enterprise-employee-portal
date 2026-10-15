@@ -2,6 +2,12 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User, Department } from '../models/index.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
+import {
+  generateCsrfToken,
+  verifyCsrfTokenSignature,
+  setCsrfCookies,
+  clearCsrfCookies
+} from '../middleware/csrf.js';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const sameSiteSetting = process.env.COOKIE_SAME_SITE || 'lax';
@@ -12,7 +18,6 @@ const cookieOptions = {
   maxAge: 8 * 60 * 60 * 1000,
   sameSite: sameSiteSetting
 };
-
 
 export const login = async (req, res, next) => {
   try {
@@ -44,6 +49,9 @@ export const login = async (req, res, next) => {
 
     res.cookie('token', token, cookieOptions);
 
+    const csrfToken = generateCsrfToken();
+    setCsrfCookies(res, csrfToken);
+
     const userData = user.toJSON();
     delete userData.password;
 
@@ -58,7 +66,8 @@ export const login = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Dang nhap thanh cong.',
-      user: userData
+      user: userData,
+      csrfToken
     });
   } catch (error) {
     next(error);
@@ -76,6 +85,7 @@ export const logout = async (req, res) => {
   }
 
   res.clearCookie('token', cookieOptions);
+  clearCsrfCookies(res);
   res.status(200).json({ success: true, message: 'Dang xuat thanh cong.' });
 };
 
@@ -90,8 +100,24 @@ export const getMe = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Khong tim thay nguoi dung.' });
     }
 
-    res.status(200).json({ success: true, user });
+    let csrfToken = req.cookies?._csrf || req.cookies?.['XSRF-TOKEN'];
+    if (!csrfToken || !verifyCsrfTokenSignature(csrfToken)) {
+      csrfToken = generateCsrfToken();
+      setCsrfCookies(res, csrfToken);
+    }
+
+    res.status(200).json({ success: true, user, csrfToken });
   } catch (error) {
     next(error);
   }
 };
+
+export const getCsrfToken = (req, res) => {
+  let token = req.cookies?._csrf || req.cookies?.['XSRF-TOKEN'];
+  if (!token || !verifyCsrfTokenSignature(token)) {
+    token = generateCsrfToken();
+  }
+  setCsrfCookies(res, token);
+  res.status(200).json({ success: true, csrfToken: token });
+};
+

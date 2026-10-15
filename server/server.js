@@ -9,6 +9,7 @@ import { sequelize } from './src/config/database.js';
 import routes from './src/routes/index.js';
 import { errorHandler } from './src/middleware/errorHandler.js';
 import { seedDatabase } from './src/config/seed.js';
+import { csrfProtection } from './src/middleware/csrf.js';
 
 dotenv.config({ path: '../.env' });
 dotenv.config();
@@ -57,13 +58,16 @@ app.use(cors({
     }
     return callback(new Error(`CORS blocked: Origin ${origin} is not allowed.`));
   },
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-XSRF-Token'],
+  exposedHeaders: ['X-CSRF-Token', 'X-XSRF-Token']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use('/api/auth/login', loginLimiter);
 app.use('/api', apiLimiter);
+app.use('/api', csrfProtection);
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({

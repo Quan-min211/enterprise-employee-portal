@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
-import { login, logout, getMe } from '../controllers/authController.js';
+import { login, logout, getMe, getCsrfToken } from '../controllers/authController.js';
 import { verifyToken } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validateRequest.js';
 
 const router = Router();
+
+router.get('/csrf-token', getCsrfToken);
 
 router.post(
   '/login',
@@ -20,3 +22,4 @@ router.post('/logout', verifyToken, logout);
 router.get('/me', verifyToken, getMe);
 
 export default router;
+
