@@ -8,16 +8,8 @@ import {
   setCsrfCookies,
   clearCsrfCookies
 } from '../middleware/csrf.js';
+import { getAuthCookieOptions, getClearCookieOptions } from '../config/cookie.js';
 
-const isProduction = process.env.NODE_ENV === 'production';
-const sameSiteSetting = process.env.COOKIE_SAME_SITE || 'lax';
-
-const cookieOptions = {
-  httpOnly: true,
-  secure: isProduction || sameSiteSetting === 'none',
-  maxAge: 8 * 60 * 60 * 1000,
-  sameSite: sameSiteSetting
-};
 
 export const login = async (req, res, next) => {
   try {
@@ -47,7 +39,7 @@ export const login = async (req, res, next) => {
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
     );
 
-    res.cookie('token', token, cookieOptions);
+    res.cookie('token', token, getAuthCookieOptions());
 
     const csrfToken = generateCsrfToken();
     setCsrfCookies(res, csrfToken);
@@ -84,7 +76,7 @@ export const logout = async (req, res) => {
     });
   }
 
-  res.clearCookie('token', cookieOptions);
+  res.clearCookie('token', getClearCookieOptions(true));
   clearCsrfCookies(res);
   res.status(200).json({ success: true, message: 'Dang xuat thanh cong.' });
 };

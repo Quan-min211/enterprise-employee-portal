@@ -31,21 +31,8 @@ export const verifyCsrfTokenSignature = (token) => {
   return crypto.timingSafeEqual(sigBuffer, expectedBuffer);
 };
 
-/**
- * Cookie options for CSRF tokens matching deployment model
- */
-export const getCsrfCookieOptions = (httpOnly = true) => {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const sameSiteSetting = process.env.COOKIE_SAME_SITE || 'lax';
-
-  return {
-    httpOnly,
-    secure: isProduction || sameSiteSetting === 'none',
-    maxAge: 8 * 60 * 60 * 1000,
-    sameSite: sameSiteSetting,
-    path: '/'
-  };
-};
+export { getCsrfCookieOptions } from '../config/cookie.js';
+import { getCsrfCookieOptions, getClearCookieOptions } from '../config/cookie.js';
 
 /**
  * Set both HttpOnly cookie (_csrf) for strict server validation
@@ -60,9 +47,10 @@ export const setCsrfCookies = (res, token) => {
  * Clear CSRF cookies on logout
  */
 export const clearCsrfCookies = (res) => {
-  res.clearCookie('_csrf', getCsrfCookieOptions(true));
-  res.clearCookie('XSRF-TOKEN', getCsrfCookieOptions(false));
+  res.clearCookie('_csrf', getClearCookieOptions(true));
+  res.clearCookie('XSRF-TOKEN', getClearCookieOptions(false));
 };
+
 
 /**
  * CSRF Protection Middleware
