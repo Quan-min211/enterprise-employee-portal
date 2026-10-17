@@ -20,7 +20,7 @@ export const login = async (req, res, next) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({
-      where: { email, status: 'active' },
+      where: { email },
       include: [{ model: Department, as: 'department', attributes: ['id', 'name', 'code'] }]
     });
 
@@ -31,6 +31,20 @@ export const login = async (req, res, next) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Email hoac mat khau khong chinh xac.' });
+    }
+
+    if (user.status !== 'active') {
+      await writeAuditLog({
+        userId: user.id,
+        action: 'auth.login.failed',
+        entityType: 'user',
+        entityId: user.id,
+        details: { email: user.email, reason: 'inactive_account' }
+      });
+      return res.status(401).json({
+        success: false,
+        message: 'Tai khoan da bi vo hieu hoa. Vui long lien he quan tri vien.'
+      });
     }
 
     const token = jwt.sign(

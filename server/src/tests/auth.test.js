@@ -93,6 +93,8 @@ describe('POST /api/auth/login', () => {
       .send({ email: 'admin.test@fusheng.com.vn', password: 'Admin@123' });
 
     expect(res.status).toBe(401);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toContain('vo hieu hoa');
 
     // Restore
     await User.update({ status: 'active' }, { where: { id: testUser.id } });
