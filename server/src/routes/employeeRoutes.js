@@ -38,7 +38,8 @@ router.post(
     body('role').optional().isIn(['admin', 'manager', 'employee']).withMessage('Vai tro khong hop le.'),
     body('department_id').optional({ nullable: true }).isInt({ min: 1 }).withMessage('Phong ban khong hop le.'),
     body('hire_date').optional({ nullable: true }).isISO8601().withMessage('Ngay vao lam khong hop le.'),
-    body('status').optional().isIn(['active', 'inactive']).withMessage('Trang thai khong hop le.')
+    body('status').optional().isIn(['active', 'inactive']).withMessage('Trang thai khong hop le.'),
+    body('must_change_password').optional().isBoolean().withMessage('must_change_password phai la boolean.')
   ],
   validateRequest,
   createEmployee
@@ -88,7 +89,8 @@ router.put(
     body('role').optional().isIn(['admin', 'manager', 'employee']).withMessage('Vai tro khong hop le.'),
     body('department_id').optional({ nullable: true }).isInt({ min: 1 }).withMessage('Phong ban khong hop le.'),
     body('hire_date').optional({ nullable: true }).isISO8601().withMessage('Ngay vao lam khong hop le.'),
-    body('status').optional().isIn(['active', 'inactive']).withMessage('Trang thai khong hop le.')
+    body('status').optional().isIn(['active', 'inactive']).withMessage('Trang thai khong hop le.'),
+    body('must_change_password').optional().isBoolean().withMessage('must_change_password phai la boolean.')
   ],
   validateRequest,
   updateEmployee

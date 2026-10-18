@@ -28,3 +28,15 @@ export const checkRole = (allowedRoles) => {
     next();
   };
 };
+
+export const checkMustChangePassword = (req, res, next) => {
+  if (req.user?.must_change_password) {
+    return res.status(403).json({
+      success: false,
+      code: 'PASSWORD_CHANGE_REQUIRED',
+      message: 'Ban phai doi mat khau lan dau truoc khi thuc hien hanh dong nay.'
+    });
+  }
+  next();
+};
+

@@ -48,7 +48,13 @@ export const login = async (req, res, next) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: user.full_name },
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.full_name,
+        must_change_password: Boolean(user.must_change_password)
+      },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
     );
@@ -71,9 +77,12 @@ export const login = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: 'Dang nhap thanh cong.',
+      message: user.must_change_password
+        ? 'Dang nhap thanh cong. Ban can doi mat khau lan dau.'
+        : 'Dang nhap thanh cong.',
       user: userData,
-      csrfToken
+      csrfToken,
+      must_change_password: Boolean(user.must_change_password)
     });
   } catch (error) {
     next(error);
@@ -112,7 +121,12 @@ export const getMe = async (req, res, next) => {
       setCsrfCookies(res, csrfToken);
     }
 
-    res.status(200).json({ success: true, user, csrfToken });
+    res.status(200).json({
+      success: true,
+      user,
+      csrfToken,
+      must_change_password: Boolean(user.must_change_password)
+    });
   } catch (error) {
     next(error);
   }

@@ -53,6 +53,11 @@ export const User = sequelize.define('User', {
     type: DataTypes.ENUM('active', 'inactive'),
     defaultValue: 'active'
   },
+  must_change_password: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: false
+  },
   department_id: {
     type: DataTypes.INTEGER,
     allowNull: true

@@ -1,7 +1,10 @@
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
 import { Department, User } from '../models/index.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
+import { getAuthCookieOptions } from '../config/cookie.js';
+
 
 const userInclude = [{ model: Department, as: 'department', attributes: ['id', 'name', 'code'] }];
 const safeAttributes = { exclude: ['password'] };
@@ -75,7 +78,8 @@ export const createEmployee = async (req, res, next) => {
       phone,
       department_id,
       hire_date,
-      status = 'active'
+      status = 'active',
+      must_change_password = true
     } = req.body;
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -89,7 +93,8 @@ export const createEmployee = async (req, res, next) => {
       phone,
       department_id: department_id || null,
       hire_date: hire_date || null,
-      status
+      status,
+      must_change_password: must_change_password !== undefined ? Boolean(must_change_password) : true
     });
 
     await writeAuditLog({
@@ -97,7 +102,7 @@ export const createEmployee = async (req, res, next) => {
       action: 'employee.create',
       entityType: 'user',
       entityId: employee.id,
-      details: { employee_code, email, role }
+      details: { employee_code, email, role, must_change_password: true }
     });
 
     const safeEmployee = await User.findByPk(employee.id, {
@@ -133,7 +138,8 @@ export const updateEmployee = async (req, res, next) => {
       'avatar_url',
       'department_id',
       'hire_date',
-      'status'
+      'status',
+      'must_change_password'
     ];
     const payload = allowedFields.reduce((acc, field) => {
       if (req.body[field] !== undefined) {
@@ -144,6 +150,7 @@ export const updateEmployee = async (req, res, next) => {
 
     if (req.body.password) {
       payload.password = await bcrypt.hash(req.body.password, 10);
+      payload.must_change_password = true; // Admin reset forces password change
     }
 
     await employee.update(payload);
@@ -250,17 +257,47 @@ export const changeMyPassword = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Mat khau hien tai khong chinh xac.' });
     }
 
+    if (current_password === new_password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mat khau moi khong duoc trung voi mat khau hien tai.'
+      });
+    }
+
+    const wasFirstTime = Boolean(user.must_change_password);
     user.password = await bcrypt.hash(new_password, 10);
+    user.must_change_password = false;
     await user.save();
+
+    // Re-issue JWT cookie so the session immediately reflects must_change_password: false
+    if (process.env.JWT_SECRET) {
+      const token = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          name: user.full_name,
+          must_change_password: false
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+      );
+      res.cookie('token', token, getAuthCookieOptions());
+    }
 
     await writeAuditLog({
       userId: req.user.id,
       action: 'employee.password.change',
       entityType: 'user',
-      entityId: req.user.id
+      entityId: req.user.id,
+      details: { first_time_change: wasFirstTime }
     });
 
-    res.status(200).json({ success: true, message: 'Doi mat khau thanh cong.' });
+    res.status(200).json({
+      success: true,
+      message: 'Doi mat khau thanh cong.',
+      must_change_password: false
+    });
   } catch (error) {
     next(error);
   }
