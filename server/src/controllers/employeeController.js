@@ -4,6 +4,8 @@ import { Op } from 'sequelize';
 import { Department, User } from '../models/index.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 import { getAuthCookieOptions } from '../config/cookie.js';
+import { validatePasswordPolicy } from '../utils/passwordPolicy.js';
+
 
 
 const userInclude = [{ model: Department, as: 'department', attributes: ['id', 'name', 'code'] }];
@@ -261,6 +263,14 @@ export const changeMyPassword = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'Mat khau moi khong duoc trung voi mat khau hien tai.'
+      });
+    }
+
+    const policyCheck = validatePasswordPolicy(new_password);
+    if (!policyCheck.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: policyCheck.message
       });
     }
 

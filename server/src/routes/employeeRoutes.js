@@ -11,6 +11,7 @@ import {
 } from '../controllers/employeeController.js';
 import { checkRole, verifyToken } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validateRequest.js';
+import { passwordValidator } from '../utils/passwordPolicy.js';
 
 const router = Router();
 
@@ -34,7 +35,7 @@ router.post(
     body('employee_code').trim().isLength({ min: 3, max: 20 }).withMessage('Ma nhan vien tu 3 den 20 ky tu.'),
     body('full_name').trim().isLength({ min: 2, max: 100 }).withMessage('Ho ten tu 2 den 100 ky tu.'),
     body('email').isEmail().withMessage('Email khong hop le.').normalizeEmail(),
-    body('password').isLength({ min: 8 }).withMessage('Mat khau toi thieu 8 ky tu.'),
+    passwordValidator('password', false),
     body('role').optional().isIn(['admin', 'manager', 'employee']).withMessage('Vai tro khong hop le.'),
     body('department_id').optional({ nullable: true }).isInt({ min: 1 }).withMessage('Phong ban khong hop le.'),
     body('hire_date').optional({ nullable: true }).isISO8601().withMessage('Ngay vao lam khong hop le.'),
@@ -62,7 +63,7 @@ router.put(
   verifyToken,
   [
     body('current_password').notEmpty().withMessage('Mat khau hien tai la bat buoc.'),
-    body('new_password').isLength({ min: 8 }).withMessage('Mat khau moi toi thieu 8 ky tu.')
+    passwordValidator('new_password', false)
   ],
   validateRequest,
   changeMyPassword
@@ -85,7 +86,7 @@ router.put(
     body('employee_code').optional().trim().isLength({ min: 3, max: 20 }).withMessage('Ma nhan vien tu 3 den 20 ky tu.'),
     body('full_name').optional().trim().isLength({ min: 2, max: 100 }).withMessage('Ho ten tu 2 den 100 ky tu.'),
     body('email').optional().isEmail().withMessage('Email khong hop le.').normalizeEmail(),
-    body('password').optional().isLength({ min: 8 }).withMessage('Mat khau toi thieu 8 ky tu.'),
+    passwordValidator('password', true),
     body('role').optional().isIn(['admin', 'manager', 'employee']).withMessage('Vai tro khong hop le.'),
     body('department_id').optional({ nullable: true }).isInt({ min: 1 }).withMessage('Phong ban khong hop le.'),
     body('hire_date').optional({ nullable: true }).isISO8601().withMessage('Ngay vao lam khong hop le.'),
