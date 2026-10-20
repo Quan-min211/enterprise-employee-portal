@@ -91,7 +91,8 @@ router.put(
     body('department_id').optional({ nullable: true }).isInt({ min: 1 }).withMessage('Phong ban khong hop le.'),
     body('hire_date').optional({ nullable: true }).isISO8601().withMessage('Ngay vao lam khong hop le.'),
     body('status').optional().isIn(['active', 'inactive']).withMessage('Trang thai khong hop le.'),
-    body('must_change_password').optional().isBoolean().withMessage('must_change_password phai la boolean.')
+    body('must_change_password').optional().isBoolean().withMessage('must_change_password phai la boolean.'),
+    body('unlock').optional().isBoolean().withMessage('unlock phai la boolean.')
   ],
   validateRequest,
   updateEmployee

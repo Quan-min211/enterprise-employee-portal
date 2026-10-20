@@ -153,6 +153,13 @@ export const updateEmployee = async (req, res, next) => {
     if (req.body.password) {
       payload.password = await bcrypt.hash(req.body.password, 10);
       payload.must_change_password = true; // Admin reset forces password change
+      payload.failed_login_attempts = 0;
+      payload.locked_until = null;
+    }
+
+    if (req.body.unlock === true) {
+      payload.failed_login_attempts = 0;
+      payload.locked_until = null;
     }
 
     await employee.update(payload);

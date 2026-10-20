@@ -58,6 +58,15 @@ export const User = sequelize.define('User', {
     defaultValue: false,
     allowNull: false
   },
+  failed_login_attempts: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    allowNull: false
+  },
+  locked_until: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
   department_id: {
     type: DataTypes.INTEGER,
     allowNull: true

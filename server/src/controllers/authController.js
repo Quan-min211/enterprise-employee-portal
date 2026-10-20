@@ -18,6 +18,9 @@ export const login = async (req, res, next) => {
     }
 
     const { email, password } = req.body;
+    const maxFailedAttempts = parseInt(process.env.AUTH_MAX_FAILED_ATTEMPTS, 10) || 5;
+    const lockoutMinutes = parseInt(process.env.AUTH_LOCKOUT_MINUTES, 10) || 15;
+    const lockoutMs = lockoutMinutes * 60 * 1000;
 
     const user = await User.findOne({
       where: { email },
@@ -28,11 +31,80 @@ export const login = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Email hoac mat khau khong chinh xac.' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Email hoac mat khau khong chinh xac.' });
+    // 1. Check if user is currently locked out
+    if (user.locked_until) {
+      const now = new Date();
+      const lockedUntilDate = new Date(user.locked_until);
+
+      if (lockedUntilDate > now) {
+        const remainingMinutes = Math.max(1, Math.ceil((lockedUntilDate.getTime() - now.getTime()) / 60000));
+        await writeAuditLog({
+          userId: user.id,
+          action: 'auth.login.locked',
+          entityType: 'user',
+          entityId: user.id,
+          details: { email: user.email, remainingMinutes }
+        });
+
+        return res.status(423).json({
+          success: false,
+          locked: true,
+          remainingMinutes,
+          message: `Tai khoan tam thoi bi khoa do dang nhap sai qua nhieu lan. Vui long thu lai sau ${remainingMinutes} phut.`
+        });
+      } else {
+        // Lockout period has elapsed, reset counters
+        user.failed_login_attempts = 0;
+        user.locked_until = null;
+        await user.save();
+      }
     }
 
+    // 2. Validate password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      const newAttempts = (user.failed_login_attempts || 0) + 1;
+
+      if (newAttempts >= maxFailedAttempts) {
+        user.failed_login_attempts = newAttempts;
+        user.locked_until = new Date(Date.now() + lockoutMs);
+        await user.save();
+
+        await writeAuditLog({
+          userId: user.id,
+          action: 'auth.account.locked',
+          entityType: 'user',
+          entityId: user.id,
+          details: { email: user.email, attempts: newAttempts, lockoutMinutes }
+        });
+
+        return res.status(423).json({
+          success: false,
+          locked: true,
+          remainingMinutes: lockoutMinutes,
+          message: `Tai khoan tam thoi bi khoa trong ${lockoutMinutes} phut do nhap sai mat khau ${newAttempts} lan lien tiep.`
+        });
+      } else {
+        user.failed_login_attempts = newAttempts;
+        await user.save();
+
+        const remaining = maxFailedAttempts - newAttempts;
+        await writeAuditLog({
+          userId: user.id,
+          action: 'auth.login.failed',
+          entityType: 'user',
+          entityId: user.id,
+          details: { email: user.email, reason: 'wrong_password', attempts: newAttempts }
+        });
+
+        return res.status(401).json({
+          success: false,
+          message: `Email hoac mat khau khong chinh xac. Con ${remaining} lan thu truoc khi tai khoan bi khoa.`
+        });
+      }
+    }
+
+    // 3. Check if account is active
     if (user.status !== 'active') {
       await writeAuditLog({
         userId: user.id,
@@ -45,6 +117,13 @@ export const login = async (req, res, next) => {
         success: false,
         message: 'Tai khoan da bi vo hieu hoa. Vui long lien he quan tri vien.'
       });
+    }
+
+    // 4. Successful login: reset failed attempts if previously accumulated
+    if (user.failed_login_attempts > 0 || user.locked_until) {
+      user.failed_login_attempts = 0;
+      user.locked_until = null;
+      await user.save();
     }
 
     const token = jwt.sign(
