@@ -6,6 +6,7 @@ export const validateRequest = (req, res, next) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({
       success: false,
+      code: 'VALIDATION_ERROR',
       message: 'Du lieu gui len khong hop le.',
       errors: errors.array().map((error) => ({
         field: error.path,

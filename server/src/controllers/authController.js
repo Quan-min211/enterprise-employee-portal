@@ -14,7 +14,12 @@ import { getAuthCookieOptions, getClearCookieOptions } from '../config/cookie.js
 export const login = async (req, res, next) => {
   try {
     if (!process.env.JWT_SECRET) {
-      return res.status(500).json({ success: false, message: 'He thong chua cau hinh JWT_SECRET.' });
+      const isProd = process.env.NODE_ENV === 'production';
+      return res.status(500).json({
+        success: false,
+        code: 'INTERNAL_SERVER_ERROR',
+        message: isProd ? 'Đã xảy ra lỗi máy chủ nội bộ.' : 'He thong chua cau hinh JWT_SECRET.'
+      });
     }
 
     const { email, password } = req.body;
@@ -28,7 +33,11 @@ export const login = async (req, res, next) => {
     });
 
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Email hoac mat khau khong chinh xac.' });
+      return res.status(401).json({
+        success: false,
+        code: 'INVALID_CREDENTIALS',
+        message: 'Email hoac mat khau khong chinh xac.'
+      });
     }
 
     // 1. Check if user is currently locked out

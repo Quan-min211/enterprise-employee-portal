@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { sequelize } from './src/config/database.js';
 import routes from './src/routes/index.js';
 import { errorHandler } from './src/middleware/errorHandler.js';
+import { AppError } from './src/utils/AppError.js';
 import { seedDatabase } from './src/config/seed.js';
 import { csrfProtection } from './src/middleware/csrf.js';
 
@@ -80,6 +81,12 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api', routes);
+
+// Catch-all handler for unmatched routes
+app.use((req, res, next) => {
+  next(new AppError(`Đường dẫn API ${req.method} ${req.originalUrl} không tồn tại.`, 404, 'NOT_FOUND'));
+});
+
 app.use(errorHandler);
 
 let serverInstance = null;

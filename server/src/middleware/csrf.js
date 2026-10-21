@@ -87,6 +87,7 @@ export const csrfProtection = (req, res, next) => {
   if (hasAuthCookie && !cookieCsrfToken) {
     return res.status(403).json({
       success: false,
+      code: 'CSRF_INVALID',
       message: 'Thiếu cookie CSRF trong phiên làm việc. Vui lòng đăng nhập lại.'
     });
   }
@@ -97,6 +98,7 @@ export const csrfProtection = (req, res, next) => {
   if (!headerCsrfToken) {
     return res.status(403).json({
       success: false,
+      code: 'CSRF_INVALID',
       message: 'Thiếu CSRF token trong request header. Vui lòng tải lại trang hoặc đăng nhập lại.'
     });
   }
@@ -105,6 +107,7 @@ export const csrfProtection = (req, res, next) => {
   if (!verifyCsrfTokenSignature(headerCsrfToken)) {
     return res.status(403).json({
       success: false,
+      code: 'CSRF_INVALID',
       message: 'CSRF token không hợp lệ hoặc đã bị thay đổi.'
     });
   }
@@ -117,6 +120,7 @@ export const csrfProtection = (req, res, next) => {
     if (headerBuf.length !== cookieBuf.length || !crypto.timingSafeEqual(headerBuf, cookieBuf)) {
       return res.status(403).json({
         success: false,
+        code: 'CSRF_INVALID',
         message: 'CSRF token không khớp với phiên làm việc.'
       });
     }
