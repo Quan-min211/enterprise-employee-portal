@@ -40,6 +40,7 @@ export const createAnnouncement = async (req, res, next) => {
     });
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'announcement.create',
       entityType: 'announcement',
@@ -78,7 +79,7 @@ export const updateAnnouncement = async (req, res, next) => {
 
     const payload = getEditablePayload(req.body);
     await announcement.update(payload);
-    await writeAuditLog({ userId: req.user.id, action: 'announcement.update', entityType: 'announcement', entityId: announcement.id, details: { title: announcement.title } });
+    await writeAuditLog({ req, userId: req.user.id, action: 'announcement.update', entityType: 'announcement', entityId: announcement.id, details: { title: announcement.title } });
     res.status(200).json({ success: true, message: 'Cap nhat thong bao thanh cong.', announcement });
   } catch (error) {
     next(error);
@@ -97,7 +98,7 @@ export const deleteAnnouncement = async (req, res, next) => {
     }
 
     await announcement.destroy();
-    await writeAuditLog({ userId: req.user.id, action: 'announcement.delete', entityType: 'announcement', entityId: announcement.id, details: { title: announcement.title } });
+    await writeAuditLog({ req, userId: req.user.id, action: 'announcement.delete', entityType: 'announcement', entityId: announcement.id, details: { title: announcement.title } });
     res.status(200).json({ success: true, message: 'Xoa thong bao thanh cong.' });
   } catch (error) {
     next(error);

@@ -171,6 +171,7 @@ export const errorHandler = (err, req, res, next) => {
     errors,
     timestamp: new Date().toISOString(),
     path: req.originalUrl || req.url || '/',
+    ...(req.id && { requestId: req.id }),
     ...(isDevelopment && {
       stack: err.stack,
       ...(err.original?.message && { rawDbError: err.original.message })

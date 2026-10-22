@@ -5,9 +5,9 @@ import Pagination from '../components/Pagination';
 import TableSkeleton, { EmptyState } from '../components/TableSkeleton';
 import { useToast } from '../contexts/ToastContext';
 
-const AUDIT_COLUMNS = ['Thời gian', 'Người thực hiện', 'Hành động', 'Đối tượng', 'Chi tiết'];
+const AUDIT_COLUMNS = ['Thời gian', 'Người thực hiện', 'Hành động', 'Đối tượng', 'IP & Trace ID', 'Chi tiết'];
 
-const initialFilters = { action: '', entity_type: '', date_from: '', date_to: '' };
+const initialFilters = { action: '', entity_type: '', date_from: '', date_to: '', ip_address: '' };
 
 export default function AuditLogs() {
   const [logs, setLogs] = useState([]);
@@ -29,7 +29,7 @@ export default function AuditLogs() {
     }
   };
 
-  useEffect(() => { fetchLogs(1); }, [filters.action, filters.entity_type, filters.date_from, filters.date_to]);
+  useEffect(() => { fetchLogs(1); }, [filters.action, filters.entity_type, filters.date_from, filters.date_to, filters.ip_address]);
 
   return (
     <section aria-labelledby="audit-heading">
@@ -48,6 +48,7 @@ export default function AuditLogs() {
             <div className="form-grid audit-filter-grid">
               <p className="field-group"><label htmlFor="audit_action">Hanh dong</label><input id="audit_action" value={filters.action} placeholder="VD: auth.login" onChange={(event) => setFilters({ ...filters, action: event.target.value })} /></p>
               <p className="field-group"><label htmlFor="audit_entity">Doi tuong</label><input id="audit_entity" value={filters.entity_type} placeholder="VD: user" onChange={(event) => setFilters({ ...filters, entity_type: event.target.value })} /></p>
+              <p className="field-group"><label htmlFor="audit_ip">Địa chỉ IP</label><input id="audit_ip" value={filters.ip_address} placeholder="VD: 127.0.0.1" onChange={(event) => setFilters({ ...filters, ip_address: event.target.value })} /></p>
               <p className="field-group"><label htmlFor="audit_from">Tu ngay</label><input id="audit_from" type="date" value={filters.date_from} onChange={(event) => setFilters({ ...filters, date_from: event.target.value })} /></p>
               <p className="field-group"><label htmlFor="audit_to">Den ngay</label><input id="audit_to" type="date" value={filters.date_to} onChange={(event) => setFilters({ ...filters, date_to: event.target.value })} /></p>
             </div>
@@ -69,12 +70,23 @@ export default function AuditLogs() {
         <section className="table-shell admin-audit-table" aria-label="Bang nhat ky he thong">
           <table className="responsive-table">
             <caption>Danh sach hoat dong he thong</caption>
-            <thead><tr><th scope="col">Thoi gian</th><th scope="col">Nguoi thuc hien</th><th scope="col">Hanh dong</th><th scope="col">Doi tuong</th><th scope="col">Chi tiet</th></tr></thead>
+            <thead><tr><th scope="col">Thoi gian</th><th scope="col">Nguoi thuc hien</th><th scope="col">Hanh dong</th><th scope="col">Doi tuong</th><th scope="col">IP &amp; Trace ID</th><th scope="col">Chi tiet</th></tr></thead>
             <tbody>{logs.map((log) => <tr key={log.id}>
               <td data-label="Thời gian"><time dateTime={log.created_at}>{new Date(log.created_at).toLocaleString('vi-VN')}</time></td>
               <td data-label="Người thực hiện">{log.actor ? `${log.actor.full_name} (${log.actor.employee_code})` : 'System'}</td>
               <td data-label="Hành động"><code>{log.action}</code></td>
               <td data-label="Đối tượng">{log.entity_type} #{log.entity_id || '-'}</td>
+              <td data-label="IP & Trace ID">
+                {log.ip_address ? <code>{log.ip_address}</code> : '-'}
+                {log.request_id && (
+                  <>
+                    <br />
+                    <small title={`Request ID: ${log.request_id}`} className="text-muted">
+                      <code>{log.request_id.slice(0, 8)}...</code>
+                    </small>
+                  </>
+                )}
+              </td>
               <td data-label="Chi tiết"><code>{log.details ? JSON.stringify(log.details) : '-'}</code></td>
             </tr>)}</tbody>
           </table>

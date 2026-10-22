@@ -51,6 +51,7 @@ export const createHoliday = async (req, res, next) => {
     const holiday = await Holiday.create({ date, name, type: type || 'national' });
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'holiday.create',
       entityType: 'holiday',
@@ -79,6 +80,7 @@ export const updateHoliday = async (req, res, next) => {
     await holiday.save();
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'holiday.update',
       entityType: 'holiday',
@@ -104,6 +106,7 @@ export const deleteHoliday = async (req, res, next) => {
     await holiday.destroy();
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'holiday.delete',
       entityType: 'holiday',

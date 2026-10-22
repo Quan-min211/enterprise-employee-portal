@@ -37,6 +37,7 @@ export const createDepartment = async (req, res, next) => {
     const department = await Department.create(payload);
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'department.create',
       entityType: 'department',
@@ -70,6 +71,7 @@ export const updateDepartment = async (req, res, next) => {
     await department.update(payload);
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'department.update',
       entityType: 'department',
@@ -98,6 +100,7 @@ export const deleteDepartment = async (req, res, next) => {
     await department.destroy();
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'department.delete',
       entityType: 'department',

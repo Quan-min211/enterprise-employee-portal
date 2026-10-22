@@ -157,6 +157,7 @@ export const createLeaveRequest = async (req, res, next) => {
     });
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'leave.create',
       entityType: 'leave_request',
@@ -230,6 +231,7 @@ export const exportLeaveRequests = async (req, res, next) => {
     ].join('\n');
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'leave.export',
       entityType: 'leave_request',
@@ -283,6 +285,7 @@ export const updateLeaveStatus = async (req, res, next) => {
     });
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: `leave.${status}`,
       entityType: 'leave_request',
@@ -334,6 +337,7 @@ export const cancelLeaveRequest = async (req, res, next) => {
     });
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'leave.cancelled',
       entityType: 'leave_request',

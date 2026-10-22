@@ -100,6 +100,7 @@ export const createEmployee = async (req, res, next) => {
     });
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'employee.create',
       entityType: 'user',
@@ -165,6 +166,7 @@ export const updateEmployee = async (req, res, next) => {
     await employee.update(payload);
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'employee.update',
       entityType: 'user',
@@ -203,6 +205,7 @@ export const deactivateEmployee = async (req, res, next) => {
     await employee.save();
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'employee.deactivate',
       entityType: 'user',
@@ -234,6 +237,7 @@ export const updateMyProfile = async (req, res, next) => {
 
     await user.update(payload);
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'employee.profile.update',
       entityType: 'user',
@@ -303,6 +307,7 @@ export const changeMyPassword = async (req, res, next) => {
     }
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'employee.password.change',
       entityType: 'user',

@@ -9,6 +9,7 @@ import { sequelize } from './src/config/database.js';
 import routes from './src/routes/index.js';
 import { errorHandler } from './src/middleware/errorHandler.js';
 import { AppError } from './src/utils/AppError.js';
+import { requestId } from './src/middleware/requestId.js';
 import { seedDatabase } from './src/config/seed.js';
 import { csrfProtection } from './src/middleware/csrf.js';
 
@@ -46,6 +47,7 @@ const configuredOrigins = process.env.CLIENT_URL
   : ['http://localhost:5173'];
 
 app.use(helmet());
+app.use(requestId);
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (e.g., mobile apps, curl, server-to-server)
@@ -60,8 +62,8 @@ app.use(cors({
     return callback(new Error(`CORS blocked: Origin ${origin} is not allowed.`));
   },
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-XSRF-Token'],
-  exposedHeaders: ['X-CSRF-Token', 'X-XSRF-Token']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-XSRF-Token', 'X-Request-Id'],
+  exposedHeaders: ['X-CSRF-Token', 'X-XSRF-Token', 'X-Request-Id']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -76,6 +78,7 @@ app.get('/api/health', (req, res) => {
     system: 'Enterprise Employee Portal API',
     organization: 'Fu Sheng Industrial (Vietnam) Co., Ltd.',
     environment: process.env.NODE_ENV || 'development',
+    requestId: req.id,
     timestamp: new Date().toISOString()
   });
 });

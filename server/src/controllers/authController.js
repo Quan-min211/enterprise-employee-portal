@@ -48,6 +48,7 @@ export const login = async (req, res, next) => {
       if (lockedUntilDate > now) {
         const remainingMinutes = Math.max(1, Math.ceil((lockedUntilDate.getTime() - now.getTime()) / 60000));
         await writeAuditLog({
+          req,
           userId: user.id,
           action: 'auth.login.locked',
           entityType: 'user',
@@ -80,6 +81,7 @@ export const login = async (req, res, next) => {
         await user.save();
 
         await writeAuditLog({
+          req,
           userId: user.id,
           action: 'auth.account.locked',
           entityType: 'user',
@@ -99,6 +101,7 @@ export const login = async (req, res, next) => {
 
         const remaining = maxFailedAttempts - newAttempts;
         await writeAuditLog({
+          req,
           userId: user.id,
           action: 'auth.login.failed',
           entityType: 'user',
@@ -116,6 +119,7 @@ export const login = async (req, res, next) => {
     // 3. Check if account is active
     if (user.status !== 'active') {
       await writeAuditLog({
+        req,
         userId: user.id,
         action: 'auth.login.failed',
         entityType: 'user',
@@ -156,6 +160,7 @@ export const login = async (req, res, next) => {
     delete userData.password;
 
     await writeAuditLog({
+      req,
       userId: user.id,
       action: 'auth.login',
       entityType: 'user',
@@ -180,6 +185,7 @@ export const login = async (req, res, next) => {
 export const logout = async (req, res) => {
   if (req.user?.id) {
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'auth.logout',
       entityType: 'user',

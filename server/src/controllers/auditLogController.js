@@ -3,7 +3,7 @@ import { AuditLog, User } from '../models/index.js';
 
 export const getAuditLogs = async (req, res, next) => {
   try {
-    const { action, entity_type, user_id, date_from, date_to } = req.query;
+    const { action, entity_type, user_id, date_from, date_to, ip_address, request_id } = req.query;
     const page = Math.max(Number(req.query.page) || 1, 1);
     const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 50);
     const where = {};
@@ -11,6 +11,8 @@ export const getAuditLogs = async (req, res, next) => {
     if (action) where.action = action;
     if (entity_type) where.entity_type = entity_type;
     if (user_id) where.user_id = user_id;
+    if (ip_address) where.ip_address = ip_address.trim();
+    if (request_id) where.request_id = request_id.trim();
     if (date_from || date_to) {
       where.created_at = {};
       if (date_from) where.created_at[Op.gte] = `${date_from} 00:00:00`;

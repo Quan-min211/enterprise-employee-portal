@@ -100,6 +100,7 @@ export const updateBalance = async (req, res, next) => {
     await balance.save();
 
     await writeAuditLog({
+      req,
       userId: req.user.id,
       action: 'leave_balance.update',
       entityType: 'leave_balance',
