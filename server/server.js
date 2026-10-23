@@ -10,6 +10,7 @@ import routes from './src/routes/index.js';
 import { errorHandler } from './src/middleware/errorHandler.js';
 import { AppError } from './src/utils/AppError.js';
 import { requestId } from './src/middleware/requestId.js';
+import { requestLogger } from './src/middleware/requestLogger.js';
 import { seedDatabase } from './src/config/seed.js';
 import { csrfProtection } from './src/middleware/csrf.js';
 
@@ -48,6 +49,7 @@ const configuredOrigins = process.env.CLIENT_URL
 
 app.use(helmet());
 app.use(requestId);
+app.use(requestLogger);
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (e.g., mobile apps, curl, server-to-server)
