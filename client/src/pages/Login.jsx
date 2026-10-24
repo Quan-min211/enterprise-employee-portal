@@ -136,7 +136,7 @@ export default function Login() {
                     type="button"
                     className="toggle-password-btn"
                     onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                    aria-label={showPassword ? 'Ẩn ký tự' : 'Hiển thị ký tự'}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>

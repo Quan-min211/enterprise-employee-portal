@@ -53,8 +53,8 @@ export async function up(qi) {
 
 /** @param {import('sequelize').QueryInterface} qi */
 export async function down(qi) {
-  try { await qi.removeIndex('audit_logs', 'idx_auditlog_ip'); } catch (err) {}
-  try { await qi.removeIndex('audit_logs', 'idx_auditlog_request_id'); } catch (err) {}
+  try { await qi.removeIndex('audit_logs', 'idx_auditlog_ip'); } catch (_err) { /* ignore */ }
+  try { await qi.removeIndex('audit_logs', 'idx_auditlog_request_id'); } catch (_err) { /* ignore */ }
 
   try {
     await qi.sequelize.query(`
@@ -63,5 +63,5 @@ export async function down(qi) {
         DROP COLUMN \`user_agent\`,
         DROP COLUMN \`ip_address\`;
     `);
-  } catch (err) {}
+  } catch (_err) { /* ignore */ }
 }

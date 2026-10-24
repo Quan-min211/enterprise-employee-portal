@@ -41,7 +41,7 @@ export const formatDevelopmentLog = ({
   status,
   durationMs,
   contentLength,
-  ip,
+  ip: _ip,
   requestId,
   userId
 }) => {

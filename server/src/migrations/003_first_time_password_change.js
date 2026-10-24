@@ -24,5 +24,7 @@ export async function down(qi) {
       ALTER TABLE \`users\`
         DROP COLUMN \`must_change_password\`;
     `);
-  } catch (err) {}
+  } catch (_err) {
+    // Ignore if column was already dropped
+  }
 }

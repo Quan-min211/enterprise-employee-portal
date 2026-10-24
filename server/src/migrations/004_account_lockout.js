@@ -36,5 +36,7 @@ export async function down(qi) {
         DROP COLUMN \`locked_until\`,
         DROP COLUMN \`failed_login_attempts\`;
     `);
-  } catch (err) {}
+  } catch (_err) {
+    // Ignore if columns were already dropped
+  }
 }

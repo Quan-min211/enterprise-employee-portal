@@ -53,7 +53,7 @@ export const sanitizeErrorMessage = (message, isProduction = false, statusCode =
  * Standardizes error responses, assigns machine-readable codes,
  * and strictly prevents sensitive internal details from leaking to clients.
  */
-export const errorHandler = (err, req, res, next) => {
+export const errorHandler = (err, req, res, _next) => {
   const isProduction = process.env.NODE_ENV === 'production';
   const isDevelopment = process.env.NODE_ENV === 'development';
 

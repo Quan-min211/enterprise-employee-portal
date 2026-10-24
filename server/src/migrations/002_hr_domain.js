@@ -101,18 +101,18 @@ export async function up(qi) {
           FOREIGN KEY (\`manager_id\`) REFERENCES \`users\` (\`id\`)
           ON DELETE SET NULL ON UPDATE CASCADE;
     `);
-  } catch (err) {
+  } catch (_err) {
     // FK may already exist if re-running; ignore
   }
 }
 
 export async function down(qi) {
-  try { await qi.sequelize.query('ALTER TABLE `departments` DROP FOREIGN KEY `fk_departments_manager`;'); } catch (err) {}
-  try { await qi.sequelize.query('ALTER TABLE `departments` DROP COLUMN `manager_id`;'); } catch (err) {}
-  try { await qi.sequelize.query('DROP TABLE IF EXISTS `leave_approval_logs`;'); } catch (err) {}
-  try { await qi.sequelize.query('DROP TABLE IF EXISTS `holidays`;'); } catch (err) {}
-  try { await qi.sequelize.query('DROP TABLE IF EXISTS `leave_balances`;'); } catch (err) {}
-  try { await qi.sequelize.query('ALTER TABLE `leave_requests` DROP COLUMN `ot_hours`;'); } catch (err) {}
+  try { await qi.sequelize.query('ALTER TABLE `departments` DROP FOREIGN KEY `fk_departments_manager`;'); } catch (_err) { /* ignore */ }
+  try { await qi.sequelize.query('ALTER TABLE `departments` DROP COLUMN `manager_id`;'); } catch (_err) { /* ignore */ }
+  try { await qi.sequelize.query('DROP TABLE IF EXISTS `leave_approval_logs`;'); } catch (_err) { /* ignore */ }
+  try { await qi.sequelize.query('DROP TABLE IF EXISTS `holidays`;'); } catch (_err) { /* ignore */ }
+  try { await qi.sequelize.query('DROP TABLE IF EXISTS `leave_balances`;'); } catch (_err) { /* ignore */ }
+  try { await qi.sequelize.query('ALTER TABLE `leave_requests` DROP COLUMN `ot_hours`;'); } catch (_err) { /* ignore */ }
   await qi.sequelize.query(`
     ALTER TABLE \`leave_requests\`
       MODIFY COLUMN \`status\`
