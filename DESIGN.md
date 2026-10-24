@@ -1,6 +1,6 @@
 /**
  * Enterprise Employee Portal — DESIGN.md
- * Direction: Corporate Dark / Industrial Tech
+ * Direction: Modern SaaS Blue (Jira / Ant Design style)
  * Company: Fu Sheng Industrial (Vietnam) Co., Ltd.
  */
 
@@ -10,30 +10,31 @@
 
 ## Visual World
 
-**Corporate Dark / Industrial Tech.** Giao diện được xây dựng từ ngôn ngữ thị giác của một công ty sản xuất nghiêm túc: bảng điều khiển kỹ thuật, màn hình giám sát nhà máy, dashboard quản lý cấp doanh nghiệp. Mỗi quyết định thiết kế đặt câu hỏi: *"Đây có phải là thứ bạn thấy trên phần mềm ERP nội bộ của Samsung hay Foxconn không?"* — không phải app lifestyle, không phải landing page marketing. Đây là công cụ làm việc thực thụ.
+**Modern SaaS Blue.** Giao diện được xây dựng từ ngôn ngữ thiết kế của các hệ thống SaaS doanh nghiệp hiện đại hàng đầu (Jira, Linear, Ant Design). Phong cách sạch sẽ, sáng sủa, độ tương phản cao, tối ưu tuyệt đối cho nhân viên làm việc 8 tiếng/ngày tại văn phòng và nhà xưởng Fu Sheng (Việt Nam).
 
 ---
 
-## Color Palette
+## Color Palette (Quy tắc 60 - 30 - 10)
 
 | Role | Value | Usage |
 |------|-------|-------|
-| Ground | `hsl(222, 28%, 8%)` | Page background — deep navy |
-| Surface | `hsl(222, 24%, 12%)` | Cards, panels, sidebar |
-| Raised | `hsl(222, 22%, 16%)` | Elevated elements, dropdowns |
-| Hover | `hsl(222, 20%, 20%)` | Interactive hover state |
-| Border | `hsl(222, 20%, 22%)` | Separators, dividers |
-| Accent | `hsl(210, 85%, 55%)` | Primary CTA, active nav, links |
-| Accent Hover | `hsl(210, 85%, 65%)` | Lifted accent |
-| Accent Subtle | `hsl(210, 85%, 55%, 0.12)` | Accent backgrounds, tags |
-| Success | `hsl(145, 63%, 42%)` | Approved status, success states |
-| Warning | `hsl(38, 90%, 52%)` | Pending, warning states |
-| Danger | `hsl(4, 80%, 55%)` | Rejected, delete, danger |
-| Text Primary | `hsl(210, 20%, 94%)` | Headlines, primary content |
-| Text Secondary | `hsl(210, 15%, 65%)` | Body copy, descriptions |
-| Text Muted | `hsl(210, 10%, 45%)` | Captions, labels, placeholders |
+| Ground (60%) | `#F8FAFC` (Slate 50) | Nền chính toàn trang — sáng dịu mắt, không lóa |
+| Surface (30%) | `#FFFFFF` (White) | Cards, panels, sidebar, modal, bảng biểu |
+| Raised | `#F1F5F9` (Slate 100) | Nền phụ, dropdowns, avatar badge, table header |
+| Hover | `#F1F5F9` (Slate 100) | Trạng thái rê chuột tương tác |
+| Border | `#E2E8F0` (Slate 200) | Đường phân tách khối, viền card, bảng biểu |
+| Border Subtle | `#CBD5E1` (Slate 300) | Viền nhấn tinh tế khi hover |
+| Primary / Accent (10%) | `#2563EB` (Royal Blue) | Màu chủ đạo, nút CTA chính, active navigation |
+| Accent Hover | `#1D4ED8` (Royal Blue 700) | Nút CTA hover |
+| Accent Subtle | `rgba(37, 99, 235, 0.08)` | Nền tag accent, highlight mục đang chọn |
+| Success / Approved | `#10B981` (Emerald) | Duyệt đơn, thành công (Text: `#059669`) |
+| Warning / Pending | `#F59E0B` (Amber) | Chờ duyệt, cảnh báo (Text: `#D97706`) |
+| Error / Danger | `#EF4444` (Rose / Red) | Từ chối, hủy, lỗi (Text: `#DC2626`) |
+| Text Primary | `#0F172A` (Slate 900) | Tiêu đề, chữ chính, số liệu quan trọng |
+| Text Secondary | `#475569` (Slate 600) | Văn bản mô tả, nhãn phụ, thông tin thân |
+| Text Muted | `#94A3B8` (Slate 400) | Chú thích nhỏ, placeholders, thời gian mờ |
 
-**Color strategy:** Restrained — deep navy ground + single saturated blue accent. Status colors (green/amber/red) appear only in data contexts (leave status badges, form feedback). No decorative gradients.
+**Color strategy:** Dải màu Slate cao cấp pha ánh xanh lạnh công nghệ, kết hợp cùng sắc xanh Royal Blue tin cậy và màu trạng thái chuẩn Emerald, Amber, Rose đạt chuẩn tương phản WCAG 2.1 AA.
 
 ---
 
