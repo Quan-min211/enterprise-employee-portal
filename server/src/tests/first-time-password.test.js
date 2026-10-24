@@ -79,7 +79,7 @@ describe('First-time password change workflow', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.must_change_password).toBe(true);
     expect(res.body.user.must_change_password).toBe(true);
-    expect(res.body.message).toContain('Ban can doi mat khau lan dau');
+    expect(res.body.message).toMatch(/đổi mật khẩu lần đầu|Ban can doi mat khau lan dau/i);
   });
 
   it('employee cannot change password to the same temporary password', async () => {
