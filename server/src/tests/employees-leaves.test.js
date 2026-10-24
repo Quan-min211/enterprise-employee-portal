@@ -12,6 +12,7 @@ let adminCookie = null;
 let managerCookie = null;
 let employeeCookie = null;
 let testDept = null;
+let testEmployee = null;
 
 beforeAll(async () => {
   await sequelize.sync({ force: true });
@@ -47,7 +48,7 @@ beforeAll(async () => {
   });
 
   // Employee
-  await User.create({
+  testEmployee = await User.create({
     employee_code: 'EMP-001',
     full_name: 'Employee Test',
     email: 'employee2.test@fusheng.com.vn',

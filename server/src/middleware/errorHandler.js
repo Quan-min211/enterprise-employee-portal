@@ -11,7 +11,7 @@ import { AppError } from '../utils/AppError.js';
  * @param {boolean} isOperational - Whether the error is trusted/operational
  * @returns {string} Sanitized message
  */
-export const sanitizeErrorMessage = (message, isProduction = false, statusCode = 500, isOperational = false) => {
+export const sanitizeErrorMessage = (message, isProduction = false, _statusCode = 500, isOperational = false) => {
   if (typeof message !== 'string') {
     return isProduction ? 'Đã xảy ra lỗi máy chủ nội bộ. Vui lòng thử lại sau.' : String(message);
   }
