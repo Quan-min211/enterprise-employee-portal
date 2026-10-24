@@ -64,7 +64,6 @@ describe('Password Policy Unit Tests', () => {
 
 describe('Password Policy Route Integration Tests', () => {
   let adminCookie = null;
-  let testUser = null;
   let testDept = null;
 
   beforeAll(async () => {
@@ -76,7 +75,7 @@ describe('Password Policy Route Integration Tests', () => {
       description: 'Password Policy Department'
     });
 
-    testUser = await User.create({
+    await User.create({
       employee_code: 'ADM-POL-01',
       full_name: 'Policy Admin',
       email: 'policy.admin@fusheng.com.vn',

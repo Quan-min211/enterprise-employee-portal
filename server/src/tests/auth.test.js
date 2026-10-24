@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import bcrypt from 'bcryptjs';
-import app, { startServer } from '../../server.js';
+import app from '../../server.js';
 import { sequelize } from '../config/database.js';
 import { Department, User } from '../models/index.js';
 

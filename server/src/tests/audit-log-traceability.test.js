@@ -5,7 +5,6 @@ import app from '../../server.js';
 import { sequelize } from '../config/database.js';
 import { Department, User, AuditLog } from '../models/index.js';
 import {
-  writeAuditLog,
   extractClientIp,
   extractUserAgent,
   extractRequestId

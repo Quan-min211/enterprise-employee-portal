@@ -8,7 +8,6 @@ import app from '../../server.js';
 import { sequelize } from '../config/database.js';
 import { Department, User } from '../models/index.js';
 
-let adminUser = null;
 let adminCookie = null;
 let testDept = null;
 
@@ -21,7 +20,7 @@ beforeAll(async () => {
     description: 'Testing Password Changes'
   });
 
-  adminUser = await User.create({
+  await User.create({
     employee_code: 'ADM-PWD-01',
     full_name: 'Admin Password Tester',
     email: 'admin.pwd@fusheng.com.vn',

@@ -10,7 +10,6 @@ import { Department, User } from '../models/index.js';
 
 let adminCookie = null;
 let testDept = null;
-let victimUser = null;
 
 const victimEmail = 'lockout.target@fusheng.com.vn';
 const victimPassword = 'CorrectPassword@2026';
@@ -43,7 +42,7 @@ beforeAll(async () => {
   adminCookie = adminLogin.headers['set-cookie'];
 
   // Target employee user
-  victimUser = await User.create({
+  await User.create({
     employee_code: 'EMP-LOCK-01',
     full_name: 'Lockout Target',
     email: victimEmail,

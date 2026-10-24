@@ -12,7 +12,6 @@ import {
   verifyCsrfTokenSignature
 } from '../middleware/csrf.js';
 
-let testUser = null;
 let testDept = null;
 
 beforeAll(async () => {
@@ -24,7 +23,7 @@ beforeAll(async () => {
     description: 'Testing CSRF'
   });
 
-  testUser = await User.create({
+  await User.create({
     employee_code: 'CSRF-001',
     full_name: 'CSRF Test User',
     email: 'csrf.user@fusheng.com.vn',

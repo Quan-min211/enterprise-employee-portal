@@ -171,8 +171,8 @@ export const login = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: user.must_change_password
-        ? 'Dang nhap thanh cong. Ban can doi mat khau lan dau.'
-        : 'Dang nhap thanh cong.',
+        ? 'Đăng nhập thành công. Bạn cần đổi mật khẩu lần đầu.'
+        : 'Đăng nhập thành công.',
       user: userData,
       csrfToken,
       must_change_password: Boolean(user.must_change_password)
@@ -195,7 +195,7 @@ export const logout = async (req, res) => {
 
   res.clearCookie('token', getClearCookieOptions(true));
   clearCsrfCookies(res);
-  res.status(200).json({ success: true, message: 'Dang xuat thanh cong.' });
+  res.status(200).json({ success: true, message: 'Đăng xuất thành công.' });
 };
 
 export const getMe = async (req, res, next) => {

@@ -6,7 +6,6 @@ import {
   getSameSite,
   isSecureCookie,
   getCookieMaxAge,
-  getBaseCookieOptions,
   getAuthCookieOptions,
   getCsrfCookieOptions,
   getClearCookieOptions

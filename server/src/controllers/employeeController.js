@@ -317,7 +317,7 @@ export const changeMyPassword = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: 'Doi mat khau thanh cong.',
+      message: 'Đổi mật khẩu thành công.',
       must_change_password: false
     });
   } catch (error) {

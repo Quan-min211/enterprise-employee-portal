@@ -16,8 +16,8 @@ export const sanitizeErrorMessage = (message, isProduction = false, statusCode =
     return isProduction ? 'Đã xảy ra lỗi máy chủ nội bộ. Vui lòng thử lại sau.' : String(message);
   }
 
-  // In production, unhandled 500 or non-operational errors must NEVER expose raw error details
-  if (isProduction && (statusCode >= 500 || !isOperational)) {
+  // In production, unhandled non-operational errors must NEVER expose raw error details
+  if (isProduction && !isOperational) {
     return 'Đã xảy ra lỗi máy chủ nội bộ. Vui lòng thử lại sau.';
   }
 
@@ -123,7 +123,7 @@ export const errorHandler = (err, req, res, _next) => {
     message = isProduction
       ? 'Hệ thống đang gặp sự cố khi xử lý dữ liệu. Vui lòng thử lại sau.'
       : err.message;
-    isOperational = false;
+    isOperational = isProduction;
     errors = null;
   }
 

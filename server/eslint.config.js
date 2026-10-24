@@ -2,6 +2,13 @@ import js from '@eslint/js';
 import globals from 'globals';
 
 export default [
+  {
+    ignores: [
+      '**/node_modules/**',
+      '**/coverage/**',
+      'src/migrations/**'
+    ]
+  },
   js.configs.recommended,
   {
     languageOptions: {
@@ -12,15 +19,19 @@ export default [
       }
     },
     rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_'
+        }
+      ],
       'no-console': 'off',
       'eqeqeq': ['error', 'always'],
       'no-var': 'error',
       'prefer-const': 'error',
       'no-duplicate-imports': 'error'
     }
-  },
-  {
-    ignores: ['node_modules/', 'coverage/', 'src/migrations/']
   }
 ];
