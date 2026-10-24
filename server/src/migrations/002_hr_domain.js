@@ -14,12 +14,17 @@ export async function up(qi) {
   `);
 
   // 2. Add ot_hours for overtime precision (nullable, only relevant for OT requests)
-  await qi.sequelize.query(`
-    ALTER TABLE \`leave_requests\`
-      ADD COLUMN IF NOT EXISTS \`ot_hours\` DECIMAL(5,2) DEFAULT NULL
-        COMMENT 'So gio lam them, chi dung cho don OT (request_type=overtime)'
-        AFTER \`day_count\`;
-  `);
+  //    TiDB does not support ADD COLUMN IF NOT EXISTS — use try/catch instead
+  try {
+    await qi.sequelize.query(`
+      ALTER TABLE \`leave_requests\`
+        ADD COLUMN \`ot_hours\` DECIMAL(5,2) DEFAULT NULL
+          COMMENT 'So gio lam them, chi dung cho don OT (request_type=overtime)'
+          AFTER \`day_count\`;
+    `);
+  } catch (err) {
+    if (!err.message.includes('Duplicate column')) throw err;
+  }
 
   // 3. leave_balances — so ngay phep theo nam
   await qi.sequelize.query(`
@@ -78,26 +83,36 @@ export async function up(qi) {
   `);
 
   // 6. departments: add manager_id FK
-  await qi.sequelize.query(`
-    ALTER TABLE \`departments\`
-      ADD COLUMN IF NOT EXISTS \`manager_id\` INT DEFAULT NULL
-        COMMENT 'User ID cua quan ly phong ban'
-        AFTER \`manager_name\`,
-      ADD CONSTRAINT \`fk_departments_manager\`
-        FOREIGN KEY (\`manager_id\`) REFERENCES \`users\` (\`id\`)
-        ON DELETE SET NULL ON UPDATE CASCADE;
-  `).catch(() => {
+  try {
+    await qi.sequelize.query(`
+      ALTER TABLE \`departments\`
+        ADD COLUMN \`manager_id\` INT DEFAULT NULL
+          COMMENT 'User ID cua quan ly phong ban'
+          AFTER \`manager_name\`;
+    `);
+  } catch (err) {
+    if (!err.message.includes('Duplicate column')) throw err;
+  }
+
+  try {
+    await qi.sequelize.query(`
+      ALTER TABLE \`departments\`
+        ADD CONSTRAINT \`fk_departments_manager\`
+          FOREIGN KEY (\`manager_id\`) REFERENCES \`users\` (\`id\`)
+          ON DELETE SET NULL ON UPDATE CASCADE;
+    `);
+  } catch (err) {
     // FK may already exist if re-running; ignore
-  });
+  }
 }
 
 export async function down(qi) {
-  await qi.sequelize.query('ALTER TABLE `departments` DROP FOREIGN KEY IF EXISTS `fk_departments_manager`;');
-  await qi.sequelize.query('ALTER TABLE `departments` DROP COLUMN IF EXISTS `manager_id`;');
-  await qi.sequelize.query('DROP TABLE IF EXISTS `leave_approval_logs`;');
-  await qi.sequelize.query('DROP TABLE IF EXISTS `holidays`;');
-  await qi.sequelize.query('DROP TABLE IF EXISTS `leave_balances`;');
-  await qi.sequelize.query('ALTER TABLE `leave_requests` DROP COLUMN IF EXISTS `ot_hours`;');
+  try { await qi.sequelize.query('ALTER TABLE `departments` DROP FOREIGN KEY `fk_departments_manager`;'); } catch (err) {}
+  try { await qi.sequelize.query('ALTER TABLE `departments` DROP COLUMN `manager_id`;'); } catch (err) {}
+  try { await qi.sequelize.query('DROP TABLE IF EXISTS `leave_approval_logs`;'); } catch (err) {}
+  try { await qi.sequelize.query('DROP TABLE IF EXISTS `holidays`;'); } catch (err) {}
+  try { await qi.sequelize.query('DROP TABLE IF EXISTS `leave_balances`;'); } catch (err) {}
+  try { await qi.sequelize.query('ALTER TABLE `leave_requests` DROP COLUMN `ot_hours`;'); } catch (err) {}
   await qi.sequelize.query(`
     ALTER TABLE \`leave_requests\`
       MODIFY COLUMN \`status\`

@@ -5,18 +5,24 @@
 
 /** @param {import('sequelize').QueryInterface} qi */
 export async function up(qi) {
-  await qi.sequelize.query(`
-    ALTER TABLE \`users\`
-      ADD COLUMN IF NOT EXISTS \`must_change_password\` TINYINT(1) NOT NULL DEFAULT 0
-        COMMENT 'Bat buoc doi mat khau lan dau cho tai khoan do admin tao'
-        AFTER \`status\`;
-  `);
+  try {
+    await qi.sequelize.query(`
+      ALTER TABLE \`users\`
+        ADD COLUMN \`must_change_password\` TINYINT(1) NOT NULL DEFAULT 0
+          COMMENT 'Bat buoc doi mat khau lan dau cho tai khoan do admin tao'
+          AFTER \`status\`;
+    `);
+  } catch (err) {
+    if (!err.message.includes('Duplicate column')) throw err;
+  }
 }
 
 /** @param {import('sequelize').QueryInterface} qi */
 export async function down(qi) {
-  await qi.sequelize.query(`
-    ALTER TABLE \`users\`
-      DROP COLUMN IF EXISTS \`must_change_password\`;
-  `);
+  try {
+    await qi.sequelize.query(`
+      ALTER TABLE \`users\`
+        DROP COLUMN \`must_change_password\`;
+    `);
+  } catch (err) {}
 }
