@@ -18,7 +18,8 @@
     "migrate:status": "node src/migrations/run.js --status",
     "migrate:create": "node src/migrations/create.js",
     "seed:dev": "node src/seeders/seed.dev.js",
-    "seed:prod": "node src/seeders/seed.production.js"
+    "seed:prod": "node src/seeders/seed.production.js",
+    "seed:bulk": "node src/seeders/seed.bulk-employees.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
