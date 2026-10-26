@@ -6,7 +6,8 @@ export default [
     ignores: [
       '**/node_modules/**',
       '**/coverage/**',
-      'src/migrations/**'
+      'src/migrations/**',
+      'src/seeders/**'
     ]
   },
   js.configs.recommended,

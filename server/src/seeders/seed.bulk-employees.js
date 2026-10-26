@@ -204,4 +204,9 @@ async function run() {
   }
 }
 
-run();
+export { buildEmployees };
+
+const isDirectRun = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (isDirectRun) {
+  run();
+}

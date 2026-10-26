@@ -16,7 +16,10 @@
     "migrate": "node src/migrations/run.js",
     "migrate:undo": "node src/migrations/run.js --undo",
     "migrate:status": "node src/migrations/run.js --status",
-    "migrate:create": "node src/migrations/create.js",
+    "seed": "node src/seeders/run.js",
+    "seed:undo": "node src/seeders/run.js --undo",
+    "seed:status": "node src/seeders/run.js --status",
+    "seed:create": "node src/seeders/create.js",
     "seed:dev": "node src/seeders/seed.dev.js",
     "seed:prod": "node src/seeders/seed.production.js",
     "seed:bulk": "node src/seeders/seed.bulk-employees.js"
