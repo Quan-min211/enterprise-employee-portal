@@ -21,12 +21,13 @@ describe('Standard Migrations Architecture', () => {
   it('identifies all 3-digit numbered migration files in sequential order', async () => {
     const files = await getMigrationFiles();
 
-    expect(files.length).toBeGreaterThanOrEqual(5);
+    expect(files.length).toBeGreaterThanOrEqual(6);
     expect(files[0]).toBe('001_initial_schema.js');
     expect(files[1]).toBe('002_hr_domain.js');
     expect(files[2]).toBe('003_first_time_password_change.js');
     expect(files[3]).toBe('004_account_lockout.js');
     expect(files[4]).toBe('005_audit_log_traceability.js');
+    expect(files[5]).toBe('006_user_indexes.js');
 
     // Ensure every file follows strict naming convention
     for (const file of files) {
