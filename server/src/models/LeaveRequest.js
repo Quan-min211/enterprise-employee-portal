@@ -54,6 +54,7 @@ export const LeaveRequest = sequelize.define('LeaveRequest', {
   tableName: 'leave_requests',
   indexes: [
     { fields: ['user_id', 'status'], name: 'idx_leaves_user_status' },
+    { fields: ['user_id', 'status', 'start_date'], name: 'idx_leaves_user_status_start_date' },
     { fields: ['start_date'], name: 'idx_leaves_start_date' },
     { fields: ['status'], name: 'idx_leaves_status' }
   ]

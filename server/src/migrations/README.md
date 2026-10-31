@@ -16,6 +16,7 @@ server/src/migrations/
 ├── 004_account_lockout.js           # Thêm failed_login_attempts và locked_until (khóa tài khoản brute-force)
 ├── 005_audit_log_traceability.js    # Bổ sung ip_address, user_agent, request_id vào audit_logs
 ├── 006_user_indexes.js              # Thêm indexes idx_users_email, idx_users_employee_code
+├── 007_leave_requests_index.js      # Thêm composite index idx_leaves_user_status_start_date
 ├── create.js                        # CLI generator tạo nhanh file migration mới
 ├── run.js                           # Migration runner (hỗ trợ up, down/undo, status)
 └── README.md                        # Tài liệu hướng dẫn chuẩn
