@@ -25,5 +25,9 @@ export const Announcement = sequelize.define('Announcement', {
     allowNull: true
   }
 }, {
-  tableName: 'announcements'
+  tableName: 'announcements',
+  indexes: [
+    { fields: ['priority'], name: 'idx_announcements_priority' },
+    { fields: ['priority', 'created_at'], name: 'idx_announcements_priority_created_at' }
+  ]
 });
