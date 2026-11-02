@@ -18,6 +18,7 @@ server/src/migrations/
 ├── 006_user_indexes.js              # Thêm indexes idx_users_email, idx_users_employee_code
 ├── 007_leave_requests_index.js      # Thêm composite index idx_leaves_user_status_start_date
 ├── 008_announcements_index.js       # Thêm composite index idx_announcements_priority_created_at
+├── 009_audit_logs_index.js          # Thêm composite index idx_audit_logs_user_action_created_at
 ├── create.js                        # CLI generator tạo nhanh file migration mới
 ├── run.js                           # Migration runner (hỗ trợ up, down/undo, status)
 └── README.md                        # Tài liệu hướng dẫn chuẩn

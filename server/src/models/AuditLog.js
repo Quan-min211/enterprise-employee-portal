@@ -42,6 +42,7 @@ export const AuditLog = sequelize.define('AuditLog', {
     { fields: ['created_at'], name: 'idx_auditlog_created_at' },
     { fields: ['user_id'], name: 'idx_auditlog_user_id' },
     { fields: ['request_id'], name: 'idx_auditlog_request_id' },
-    { fields: ['ip_address'], name: 'idx_auditlog_ip' }
+    { fields: ['ip_address'], name: 'idx_auditlog_ip' },
+    { fields: ['user_id', 'action', 'created_at'], name: 'idx_audit_logs_user_action_created_at' }
   ]
 });

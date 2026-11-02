@@ -98,7 +98,7 @@ enterprise-employee-portal/
 │   │   ├── config/                # Cấu hình Database & Security
 │   │   ├── controllers/           # Xử lý logic nghiệp vụ
 │   │   ├── middleware/            # Auth, CSRF, Rate-limit, Request Logger, Error Handler
-│   │   ├── migrations/            # Hệ thống Migration DDL (001 -> 008)
+│   │   ├── migrations/            # Hệ thống Migration DDL (001 -> 009)
 │   │   ├── models/                # Sequelize Models (User, Department, Leave, Holiday...)
 │   │   ├── routes/                # Định tuyến REST API
 │   │   ├── seeders/               # Hệ thống Seeder DML chuẩn & 220 nhân sự
