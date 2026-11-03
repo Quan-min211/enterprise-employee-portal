@@ -19,6 +19,7 @@ server/src/migrations/
 ├── 007_leave_requests_index.js      # Thêm composite index idx_leaves_user_status_start_date
 ├── 008_announcements_index.js       # Thêm composite index idx_announcements_priority_created_at
 ├── 009_audit_logs_index.js          # Thêm composite index idx_audit_logs_user_action_created_at
+├── 010_standardize_foreign_keys.js  # Chuẩn hóa 9 Foreign Key constraints có ON DELETE / ON UPDATE rõ ràng
 ├── create.js                        # CLI generator tạo nhanh file migration mới
 ├── run.js                           # Migration runner (hỗ trợ up, down/undo, status)
 └── README.md                        # Tài liệu hướng dẫn chuẩn

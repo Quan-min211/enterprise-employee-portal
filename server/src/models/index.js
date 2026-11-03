@@ -9,11 +9,11 @@ import { AuditLog } from './AuditLog.js';
 
 // ─── Department - User ────────────────────────────────────────────────────────
 Department.hasMany(User, { foreignKey: 'department_id', as: 'employees', onDelete: 'SET NULL', onUpdate: 'CASCADE' });
-User.belongsTo(Department, { foreignKey: 'department_id', as: 'department' });
+User.belongsTo(Department, { foreignKey: 'department_id', as: 'department', onDelete: 'SET NULL', onUpdate: 'CASCADE' });
 
-// Department manager (optional FK added in migration 002)
-Department.belongsTo(User, { foreignKey: 'manager_id', as: 'manager', constraints: false });
-User.hasMany(Department, { foreignKey: 'manager_id', as: 'managed_departments', constraints: false });
+// Department manager (FK: fk_departments_manager)
+Department.belongsTo(User, { foreignKey: 'manager_id', as: 'manager', onDelete: 'SET NULL', onUpdate: 'CASCADE', constraints: false });
+User.hasMany(Department, { foreignKey: 'manager_id', as: 'managed_departments', onDelete: 'SET NULL', onUpdate: 'CASCADE', constraints: false });
 
 // ─── User - LeaveRequest ──────────────────────────────────────────────────────
 User.hasMany(LeaveRequest, { foreignKey: 'user_id', as: 'leave_requests', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
