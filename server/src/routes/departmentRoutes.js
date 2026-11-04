@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { body, param } from 'express-validator';
+import { body, param, query } from 'express-validator';
 import {
   createDepartment,
   deleteDepartment,
@@ -11,7 +11,13 @@ import { validateRequest } from '../middleware/validateRequest.js';
 
 const router = Router();
 
-router.get('/', verifyToken, getDepartments);
+router.get(
+  '/',
+  verifyToken,
+  [query('status').optional().isIn(['active', 'inactive']).withMessage('Trang thai phong ban khong hop le.')],
+  validateRequest,
+  getDepartments
+);
 
 router.post(
   '/',
@@ -21,7 +27,8 @@ router.post(
     body('code').trim().isLength({ min: 2, max: 20 }).withMessage('Ma phong ban tu 2 den 20 ky tu.'),
     body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Ten phong ban tu 2 den 100 ky tu.'),
     body('manager_name').optional({ nullable: true }).trim().isLength({ max: 100 }).withMessage('Ten truong bo phan toi da 100 ky tu.'),
-    body('description').optional({ nullable: true }).trim().isLength({ max: 1000 }).withMessage('Mo ta toi da 1000 ky tu.')
+    body('description').optional({ nullable: true }).trim().isLength({ max: 1000 }).withMessage('Mo ta toi da 1000 ky tu.'),
+    body('status').optional().isIn(['active', 'inactive']).withMessage('Trang thai phong ban khong hop le.')
   ],
   validateRequest,
   createDepartment
@@ -36,7 +43,8 @@ router.put(
     body('code').optional().trim().isLength({ min: 2, max: 20 }).withMessage('Ma phong ban tu 2 den 20 ky tu.'),
     body('name').optional().trim().isLength({ min: 2, max: 100 }).withMessage('Ten phong ban tu 2 den 100 ky tu.'),
     body('manager_name').optional({ nullable: true }).trim().isLength({ max: 100 }).withMessage('Ten truong bo phan toi da 100 ky tu.'),
-    body('description').optional({ nullable: true }).trim().isLength({ max: 1000 }).withMessage('Mo ta toi da 1000 ky tu.')
+    body('description').optional({ nullable: true }).trim().isLength({ max: 1000 }).withMessage('Mo ta toi da 1000 ky tu.'),
+    body('status').optional().isIn(['active', 'inactive']).withMessage('Trang thai phong ban khong hop le.')
   ],
   validateRequest,
   updateDepartment

@@ -73,11 +73,14 @@ export const User = sequelize.define('User', {
   }
 }, {
   tableName: 'users',
+  paranoid: true,
+  deletedAt: 'deleted_at',
   indexes: [
     { fields: ['email'], name: 'idx_users_email' },
     { fields: ['employee_code'], name: 'idx_users_employee_code' },
     { fields: ['department_id', 'status'], name: 'idx_users_dept_status' },
     { fields: ['role'], name: 'idx_users_role' },
-    { fields: ['status'], name: 'idx_users_status' }
+    { fields: ['status'], name: 'idx_users_status' },
+    { fields: ['deleted_at'], name: 'idx_users_deleted_at' }
   ]
 });

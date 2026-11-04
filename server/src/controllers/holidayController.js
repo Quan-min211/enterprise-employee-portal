@@ -40,8 +40,22 @@ export const createHoliday = async (req, res, next) => {
   try {
     const { date, name, type } = req.body;
 
-    const existing = await Holiday.findOne({ where: { date } });
+    const existing = await Holiday.findOne({ where: { date }, paranoid: false });
     if (existing) {
+      if (existing.deleted_at) {
+        await existing.restore();
+        await existing.update({ name, type: type || 'national' });
+        await writeAuditLog({
+          req,
+          userId: req.user.id,
+          action: 'holiday.restore',
+          entityType: 'holiday',
+          entityId: existing.id,
+          details: { date, name, type }
+        });
+        return res.status(200).json({ success: true, message: 'Khoi phuc ngay le thanh cong.', holiday: existing });
+      }
+
       return res.status(409).json({
         success: false,
         message: `Ngay ${date} da ton tai trong danh sach ngay le.`
@@ -103,6 +117,7 @@ export const deleteHoliday = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Khong tim thay ngay le.' });
     }
 
+    // Soft delete via paranoid model (sets deleted_at = NOW())
     await holiday.destroy();
 
     await writeAuditLog({
@@ -111,7 +126,7 @@ export const deleteHoliday = async (req, res, next) => {
       action: 'holiday.delete',
       entityType: 'holiday',
       entityId: id,
-      details: { date: holiday.date, name: holiday.name }
+      details: { date: holiday.date, name: holiday.name, soft_delete: true }
     });
 
     res.status(200).json({ success: true, message: 'Da xoa ngay le.' });
@@ -130,12 +145,18 @@ export const seedDefaultHolidays = async (req, res, next) => {
     let skipped = 0;
 
     for (const h of defaultVietnamHolidays) {
-      const [, wasCreated] = await Holiday.findOrCreate({
-        where: { date: h.date },
-        defaults: h
-      });
-      if (wasCreated) created++;
-      else skipped++;
+      const existing = await Holiday.findOne({ where: { date: h.date }, paranoid: false });
+      if (existing) {
+        if (existing.deleted_at) {
+          await existing.restore();
+          created++;
+        } else {
+          skipped++;
+        }
+      } else {
+        await Holiday.create(h);
+        created++;
+      }
     }
 
     res.status(200).json({

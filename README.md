@@ -62,7 +62,7 @@ Dự án mô phỏng chính xác cơ cấu tổ chức gồm **8 phòng ban** ch
 ### 3. Hệ sinh thái Database Migrations & Seeders chuyên nghiệp
 * **Migration Runner (`server/src/migrations/`):** Quản lý phiên bản schema có cấu trúc, kiểm soát giao dịch (Transactions) và lưu vết tại `sequelize_meta`.
 * **Seeder Runner (`server/src/seeders/`):** Tự động nạp master data (phòng ban, ngày lễ, tài khoản demo) và **220 nhân sự nhà máy thực tế** kèm cơ chế rollback (`down`).
-* **Database Indexes:** Đã tối ưu hóa index các cột tần suất truy vấn cao: `users(email)`, `users(employee_code)`, `leave_requests(user_id, status, start_date)`, `announcements(priority, created_at)` v.v.
+* **Database Indexes & Soft Delete:** Đã tối ưu hóa index các cột tần suất truy vấn cao (`users`, `leave_requests`, `announcements`, `audit_logs`), đồng thời hỗ trợ xóa mềm (`deleted_at`) và kiểm soát trạng thái cho dữ liệu nghiệp vụ đảm bảo toàn vẹn lịch sử.
 
 ---
 
@@ -98,7 +98,7 @@ enterprise-employee-portal/
 │   │   ├── config/                # Cấu hình Database & Security
 │   │   ├── controllers/           # Xử lý logic nghiệp vụ
 │   │   ├── middleware/            # Auth, CSRF, Rate-limit, Request Logger, Error Handler
-│   │   ├── migrations/            # Hệ thống Migration DDL (001 -> 010)
+│   │   ├── migrations/            # Hệ thống Migration DDL (001 -> 011)
 │   │   ├── models/                # Sequelize Models (User, Department, Leave, Holiday...)
 │   │   ├── routes/                # Định tuyến REST API
 │   │   ├── seeders/               # Hệ thống Seeder DML chuẩn & 220 nhân sự

@@ -23,9 +23,19 @@ export const Department = sequelize.define('Department', {
   manager_name: {
     type: DataTypes.STRING(100),
     allowNull: true
+  },
+  status: {
+    type: DataTypes.ENUM('active', 'inactive'),
+    defaultValue: 'active',
+    allowNull: false
   }
   // manager_id FK is defined via association in models/index.js (added in migration 002)
 }, {
-  tableName: 'departments'
+  tableName: 'departments',
+  paranoid: true,
+  deletedAt: 'deleted_at',
+  indexes: [
+    { fields: ['status'], name: 'idx_departments_status' },
+    { fields: ['deleted_at'], name: 'idx_departments_deleted_at' }
+  ]
 });
-

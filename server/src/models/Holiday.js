@@ -23,7 +23,10 @@ export const Holiday = sequelize.define('Holiday', {
   }
 }, {
   tableName: 'holidays',
+  paranoid: true,
+  deletedAt: 'deleted_at',
   indexes: [
-    { fields: ['date'], name: 'idx_holidays_date' }
+    { fields: ['date'], name: 'idx_holidays_date' },
+    { fields: ['deleted_at'], name: 'idx_holidays_deleted_at' }
   ]
 });

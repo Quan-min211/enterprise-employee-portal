@@ -9,6 +9,10 @@ export const getAnnouncements = async (req, res, next) => {
       where.priority = req.query.priority;
     }
 
+    if (req.query.status) {
+      where.status = req.query.status;
+    }
+
     const page = Math.max(Number(req.query.page) || 1, 1);
     const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 50);
     const { count, rows: announcements } = await Announcement.findAndCountAll({
@@ -29,12 +33,13 @@ export const getAnnouncements = async (req, res, next) => {
 
 export const createAnnouncement = async (req, res, next) => {
   try {
-    const { title, content, priority, expires_at } = req.body;
+    const { title, content, priority, expires_at, status } = req.body;
 
     const announcement = await Announcement.create({
       title,
       content,
       priority: priority || 'normal',
+      status: status || 'published',
       expires_at: expires_at || null,
       author_id: req.user.id
     });
@@ -45,7 +50,7 @@ export const createAnnouncement = async (req, res, next) => {
       action: 'announcement.create',
       entityType: 'announcement',
       entityId: announcement.id,
-      details: { priority: announcement.priority, title: announcement.title }
+      details: { priority: announcement.priority, title: announcement.title, status: announcement.status }
     });
 
     res.status(201).json({
@@ -59,7 +64,7 @@ export const createAnnouncement = async (req, res, next) => {
 };
 
 const getEditablePayload = (body) => {
-  const allowedFields = ['title', 'content', 'priority', 'expires_at'];
+  const allowedFields = ['title', 'content', 'priority', 'expires_at', 'status'];
   return allowedFields.reduce((payload, field) => {
     if (body[field] !== undefined) payload[field] = body[field] || null;
     return payload;
@@ -79,7 +84,7 @@ export const updateAnnouncement = async (req, res, next) => {
 
     const payload = getEditablePayload(req.body);
     await announcement.update(payload);
-    await writeAuditLog({ req, userId: req.user.id, action: 'announcement.update', entityType: 'announcement', entityId: announcement.id, details: { title: announcement.title } });
+    await writeAuditLog({ req, userId: req.user.id, action: 'announcement.update', entityType: 'announcement', entityId: announcement.id, details: { title: announcement.title, status: announcement.status } });
     res.status(200).json({ success: true, message: 'Cap nhat thong bao thanh cong.', announcement });
   } catch (error) {
     next(error);
@@ -97,8 +102,16 @@ export const deleteAnnouncement = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Ban chi co the xoa thong bao cua minh.' });
     }
 
+    // Soft delete via paranoid model (sets deleted_at = NOW())
     await announcement.destroy();
-    await writeAuditLog({ req, userId: req.user.id, action: 'announcement.delete', entityType: 'announcement', entityId: announcement.id, details: { title: announcement.title } });
+    await writeAuditLog({
+      req,
+      userId: req.user.id,
+      action: 'announcement.delete',
+      entityType: 'announcement',
+      entityId: announcement.id,
+      details: { title: announcement.title, soft_delete: true }
+    });
     res.status(200).json({ success: true, message: 'Xoa thong bao thanh cong.' });
   } catch (error) {
     next(error);

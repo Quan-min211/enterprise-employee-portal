@@ -20,14 +20,23 @@ export const Announcement = sequelize.define('Announcement', {
     defaultValue: 'normal',
     allowNull: false
   },
+  status: {
+    type: DataTypes.ENUM('published', 'archived'),
+    defaultValue: 'published',
+    allowNull: false
+  },
   expires_at: {
     type: DataTypes.DATE,
     allowNull: true
   }
 }, {
   tableName: 'announcements',
+  paranoid: true,
+  deletedAt: 'deleted_at',
   indexes: [
     { fields: ['priority'], name: 'idx_announcements_priority' },
-    { fields: ['priority', 'created_at'], name: 'idx_announcements_priority_created_at' }
+    { fields: ['priority', 'created_at'], name: 'idx_announcements_priority_created_at' },
+    { fields: ['status'], name: 'idx_announcements_status' },
+    { fields: ['deleted_at'], name: 'idx_announcements_deleted_at' }
   ]
 });

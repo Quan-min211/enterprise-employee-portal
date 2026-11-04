@@ -34,7 +34,10 @@ export const LeaveBalance = sequelize.define('LeaveBalance', {
   }
 }, {
   tableName: 'leave_balances',
+  paranoid: true,
+  deletedAt: 'deleted_at',
   indexes: [
-    { unique: true, fields: ['user_id', 'year'], name: 'uq_leave_balance_user_year' }
+    { unique: true, fields: ['user_id', 'year'], name: 'uq_leave_balance_user_year' },
+    { fields: ['deleted_at'], name: 'idx_leave_balances_deleted_at' }
   ]
 });

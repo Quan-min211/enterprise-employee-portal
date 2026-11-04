@@ -20,6 +20,7 @@ server/src/migrations/
 ├── 008_announcements_index.js       # Thêm composite index idx_announcements_priority_created_at
 ├── 009_audit_logs_index.js          # Thêm composite index idx_audit_logs_user_action_created_at
 ├── 010_standardize_foreign_keys.js  # Chuẩn hóa 9 Foreign Key constraints có ON DELETE / ON UPDATE rõ ràng
+├── 011_add_soft_delete_and_status.js# Thêm soft delete (deleted_at) và status cho dữ liệu nghiệp vụ
 ├── create.js                        # CLI generator tạo nhanh file migration mới
 ├── run.js                           # Migration runner (hỗ trợ up, down/undo, status)
 └── README.md                        # Tài liệu hướng dẫn chuẩn

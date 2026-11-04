@@ -11,6 +11,7 @@ router.get(
   verifyToken,
   [
     query('priority').optional().isIn(['normal', 'important', 'urgent']).withMessage('Muc uu tien khong hop le.'),
+    query('status').optional().isIn(['published', 'archived']).withMessage('Trang thai thong bao khong hop le.'),
     query('page').optional().isInt({ min: 1 }).withMessage('Trang khong hop le.'),
     query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('Gioi han tu 1 den 50.')
   ],
@@ -26,6 +27,7 @@ router.post(
     body('title').trim().isLength({ min: 5, max: 255 }).withMessage('Tieu de tu 5 den 255 ky tu.'),
     body('content').trim().isLength({ min: 10 }).withMessage('Noi dung toi thieu 10 ky tu.'),
     body('priority').optional().isIn(['normal', 'important', 'urgent']).withMessage('Muc uu tien khong hop le.'),
+    body('status').optional().isIn(['published', 'archived']).withMessage('Trang thai thong bao khong hop le.'),
     body('expires_at').optional({ nullable: true }).isISO8601().withMessage('Ngay het han khong hop le.')
   ],
   validateRequest,
@@ -36,6 +38,7 @@ const announcementFields = [
   body('title').trim().isLength({ min: 5, max: 255 }).withMessage('Tieu de tu 5 den 255 ky tu.'),
   body('content').trim().isLength({ min: 10 }).withMessage('Noi dung toi thieu 10 ky tu.'),
   body('priority').optional().isIn(['normal', 'important', 'urgent']).withMessage('Muc uu tien khong hop le.'),
+  body('status').optional().isIn(['published', 'archived']).withMessage('Trang thai thong bao khong hop le.'),
   body('expires_at').optional({ nullable: true }).isISO8601().withMessage('Ngay het han khong hop le.')
 ];
 
