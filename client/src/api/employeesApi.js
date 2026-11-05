@@ -7,5 +7,6 @@ export const employeesApi = {
   update: (id, payload) => axiosClient.put(`/employees/${id}`, payload),
   deactivate: (id) => axiosClient.delete(`/employees/${id}`),
   updateMe: (payload) => axiosClient.put('/employees/me', payload),
-  changePassword: (payload) => axiosClient.put('/employees/me/password', payload)
+  changePassword: (payload) => axiosClient.put('/employees/me/password', payload),
+  exportCsv: (params = {}) => axiosClient.get('/employees/export', { params, responseType: 'blob' })
 };

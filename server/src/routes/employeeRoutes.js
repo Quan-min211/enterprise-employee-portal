@@ -4,6 +4,7 @@ import {
   changeMyPassword,
   createEmployee,
   deactivateEmployee,
+  exportEmployees,
   getEmployeeById,
   getEmployees,
   updateEmployee,
@@ -67,6 +68,19 @@ router.put(
   ],
   validateRequest,
   changeMyPassword
+);
+
+router.get(
+  '/export',
+  verifyToken,
+  checkRole(['admin', 'manager']),
+  [
+    query('search').optional().trim(),
+    query('department_id').optional().isInt({ min: 1 }).withMessage('Phong ban khong hop le.'),
+    query('status').optional().isIn(['active', 'inactive', 'all']).withMessage('Trang thai khong hop le.')
+  ],
+  validateRequest,
+  exportEmployees
 );
 
 router.get(

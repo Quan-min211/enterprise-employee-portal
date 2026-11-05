@@ -5,7 +5,8 @@ import {
   Eye,
   Pencil,
   UserX,
-  RefreshCw
+  RefreshCw,
+  Download
 } from 'lucide-react';
 import { departmentsApi } from '../api/departmentsApi';
 import { employeesApi } from '../api/employeesApi';
@@ -196,7 +197,9 @@ export default function Employees() {
   const [fetchError, setFetchError] = useState('');
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ total: 0, totalPages: 1 });
+  const [isExporting, setIsExporting] = useState(false);
   const isAdmin = user?.role === 'admin';
+  const canExport = isAdmin || user?.role === 'manager';
 
   const syncDialog = (dialogRef, isOpen, onClose) => {
     const dialog = dialogRef.current;
@@ -248,6 +251,29 @@ export default function Employees() {
   const handleSearch = (event) => {
     event.preventDefault();
     fetchEmployees(filters, 1);
+  };
+
+  const handleExportCsv = async () => {
+    setIsExporting(true);
+    try {
+      const activeFilters = {};
+      if (filters.search) activeFilters.search = filters.search;
+      if (filters.department_id) activeFilters.department_id = filters.department_id;
+      const blob = await employeesApi.exportCsv(activeFilters);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'text/csv;charset=utf-8;' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `danh-sach-nhan-vien-${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      pushToast('Đã xuất danh sách nhân viên CSV thành công.', 'success');
+    } catch (error) {
+      pushToast(error.message || 'Không thể xuất danh sách nhân viên.', 'error');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const openEmployeeProfile = async (id) => {
@@ -343,6 +369,18 @@ export default function Employees() {
               <Search size={15} aria-hidden="true" />
               Tìm kiếm
             </button>
+            {canExport && (
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                disabled={isExporting}
+                className="btn btn-secondary"
+                aria-label="Xuất danh sách nhân viên ra tệp CSV"
+              >
+                <Download size={15} aria-hidden="true" />
+                {isExporting ? 'Đang xuất...' : 'Xuất CSV'}
+              </button>
+            )}
           </form>
         </search>
       </header>

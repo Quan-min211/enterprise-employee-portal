@@ -324,3 +324,102 @@ export const changeMyPassword = async (req, res, next) => {
     next(error);
   }
 };
+
+const escapeCsvValue = (value) => {
+  const normalized = value === null || value === undefined ? '' : String(value);
+  return `"${normalized.replace(/"/g, '""')}"`;
+};
+
+const employeeCsvHeaders = [
+  'Mã nhân viên',
+  'Họ và tên',
+  'Email công việc',
+  'Số điện thoại',
+  'Mã phòng ban',
+  'Tên phòng ban',
+  'Chức vụ',
+  'Vai trò hệ thống',
+  'Ngày vào làm',
+  'Trạng thái',
+  'Ngày tạo hồ sơ'
+];
+
+export const exportEmployees = async (req, res, next) => {
+  try {
+    const { search, department_id, status } = req.query;
+    const where = {};
+
+    if (status && status !== 'all') {
+      where.status = status;
+    } else if (!status) {
+      where.status = 'active';
+    }
+
+    if (search) {
+      where[Op.or] = [
+        { full_name: { [Op.like]: `%${search}%` } },
+        { employee_code: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    // Role-based scoping: Manager only exports their own department
+    if (req.user.role === 'manager') {
+      const managerUser = await User.findByPk(req.user.id, { attributes: ['department_id'] });
+      where.department_id = managerUser?.department_id || -1;
+    } else if (department_id) {
+      where.department_id = department_id;
+    }
+
+    const employees = await User.findAll({
+      where,
+      attributes: ['id', 'employee_code', 'full_name', 'email', 'phone', 'position', 'role', 'hire_date', 'status', 'created_at'],
+      include: userInclude,
+      order: [['full_name', 'ASC']]
+    });
+
+    const roleMap = {
+      admin: 'Quản trị viên',
+      manager: 'Quản lý',
+      employee: 'Nhân viên'
+    };
+
+    const statusMap = {
+      active: 'Đang làm việc',
+      inactive: 'Đã nghỉ việc'
+    };
+
+    const rows = employees.map((emp) => [
+      emp.employee_code,
+      emp.full_name,
+      emp.email,
+      emp.phone || '',
+      emp.department?.code || '',
+      emp.department?.name || '',
+      emp.position || '',
+      roleMap[emp.role] || emp.role,
+      emp.hire_date || '',
+      statusMap[emp.status] || emp.status,
+      emp.created_at ? new Date(emp.created_at).toISOString().slice(0, 10) : ''
+    ]);
+
+    const csv = [
+      employeeCsvHeaders.map(escapeCsvValue).join(','),
+      ...rows.map((row) => row.map(escapeCsvValue).join(','))
+    ].join('\n');
+
+    await writeAuditLog({
+      req,
+      userId: req.user.id,
+      action: 'employee.export',
+      entityType: 'user',
+      details: { total: employees.length, filters: req.query }
+    });
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="employees-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.status(200).send(`\uFEFF${csv}`);
+  } catch (error) {
+    next(error);
+  }
+};
