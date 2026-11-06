@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Filter, ScrollText } from 'lucide-react';
+import { Filter, ScrollText, Download } from 'lucide-react';
 import { auditLogsApi } from '../api/auditLogsApi';
 import Pagination from '../components/Pagination';
 import TableSkeleton, { EmptyState } from '../components/TableSkeleton';
@@ -14,6 +14,7 @@ export default function AuditLogs() {
   const [filters, setFilters] = useState(initialFilters);
   const [meta, setMeta] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const { pushToast } = useToast();
 
   const fetchLogs = async (page = meta.page) => {
@@ -31,6 +32,30 @@ export default function AuditLogs() {
 
   useEffect(() => { fetchLogs(1); }, [filters.action, filters.entity_type, filters.date_from, filters.date_to, filters.ip_address]);
 
+  const handleExportCsv = async () => {
+    setIsExporting(true);
+    try {
+      const activeFilters = {};
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) activeFilters[key] = value;
+      });
+      const blob = await auditLogsApi.exportCsv(activeFilters);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'text/csv;charset=utf-8;' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `nhat-ky-kiem-toan-${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      pushToast('Đã xuất nhật ký kiểm toán CSV thành công.', 'success');
+    } catch (error) {
+      pushToast(error.message || 'Không thể xuất nhật ký kiểm toán.', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <section aria-labelledby="audit-heading">
       <header className="page-header">
@@ -39,6 +64,18 @@ export default function AuditLogs() {
           <h1 id="audit-heading">Nhat Ky He Thong</h1>
           <p>Tra cuu ai da thuc hien hanh dong nao tren cong thong tin noi bo.</p>
         </hgroup>
+        <menu className="action-row">
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={isExporting}
+            className="btn btn-secondary"
+            aria-label="Xuất nhật ký kiểm toán ra tệp CSV"
+          >
+            <Download size={15} aria-hidden="true" />
+            {isExporting ? 'Đang xuất CSV...' : 'Xuất CSV'}
+          </button>
+        </menu>
       </header>
 
       <search aria-label="Bộ lọc nhật ký hệ thống">
@@ -56,6 +93,16 @@ export default function AuditLogs() {
               <button type="submit" className="btn btn-primary">
                 <Filter size={15} aria-hidden="true" />
                 Lọc nhật ký
+              </button>
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                disabled={isExporting}
+                className="btn btn-secondary"
+                aria-label="Xuất nhật ký kiểm toán theo bộ lọc ra tệp CSV"
+              >
+                <Download size={15} aria-hidden="true" />
+                {isExporting ? 'Đang xuất CSV...' : 'Xuất CSV'}
               </button>
             </footer>
           </fieldset>
@@ -96,4 +143,3 @@ export default function AuditLogs() {
     </section>
   );
 }
-
