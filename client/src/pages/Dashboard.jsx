@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ShieldCheck,
@@ -11,7 +11,10 @@ import {
 } from 'lucide-react';
 import { dashboardApi } from '../api/dashboardApi';
 import { leaveBalancesApi } from '../api/leavesApi';
+import { departmentsApi } from '../api/departmentsApi';
+import { reportsApi } from '../api/reportsApi';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 
 const leaveLabels = {
   annual: 'Phép năm',
@@ -135,6 +138,66 @@ export default function Dashboard() {
   const isPureManager = user?.role === 'manager';
   const isAdmin = user?.role === 'admin';
   const isManager = user?.role === 'admin' || user?.role === 'manager';
+
+  const { pushToast } = useToast();
+  const reportDialogRef = useRef(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [isExportingReport, setIsExportingReport] = useState(false);
+  const [reportYear, setReportYear] = useState(new Date().getFullYear());
+  const [reportMonth, setReportMonth] = useState('');
+  const [reportDeptId, setReportDeptId] = useState('');
+  const [departmentsList, setDepartmentsList] = useState([]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      departmentsApi
+        .list()
+        .then((res) => setDepartmentsList(res.departments || []))
+        .catch(() => setDepartmentsList([]));
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    const dialog = reportDialogRef.current;
+    if (!dialog) return;
+    if (showReportModal && !dialog.open) {
+      dialog.showModal();
+    } else if (!showReportModal && dialog.open) {
+      dialog.close();
+    }
+  }, [showReportModal]);
+
+  const handleExportMonthlyReport = async (e) => {
+    e.preventDefault();
+    setIsExportingReport(true);
+    try {
+      const params = { year: reportYear };
+      if (reportMonth) params.month = Number(reportMonth);
+      if (isAdmin && reportDeptId) params.department_id = Number(reportDeptId);
+
+      const blob = await reportsApi.exportMonthlySummary(params);
+      const periodSlug = reportMonth
+        ? `${reportYear}-${String(reportMonth).padStart(2, '0')}`
+        : `${reportYear}`;
+      const filename = `bao-cao-dinh-ky-${periodSlug}-${new Date().toISOString().slice(0, 10)}.csv`;
+
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'text/csv;charset=utf-8;' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      setShowReportModal(false);
+      pushToast('Đã xuất báo cáo định kỳ CSV thành công.', 'success');
+    } catch (err) {
+      pushToast(err.message || 'Không thể xuất báo cáo định kỳ.', 'error');
+    } finally {
+      setIsExportingReport(false);
+    }
+  };
 
   useEffect(() => {
     document.title = 'Tổng quan hệ thống | Fu Sheng Portal';
@@ -744,6 +807,19 @@ export default function Dashboard() {
             </strong>
             <small>Tổng hợp đối soát đơn nghỉ và tăng ca toàn nhà máy ({stats.leaveStatus.pending} chờ duyệt)</small>
           </Link>
+          <button
+            type="button"
+            className="quick-action-link"
+            onClick={() => setShowReportModal(true)}
+            style={{ textAlign: 'left', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+            aria-label="Xuất báo cáo định kỳ theo tháng/năm"
+          >
+            <strong>
+              <mark className="quick-action-icon" aria-hidden="true"><Download size={18} /></mark>
+              Báo Cáo Định Kỳ
+            </strong>
+            <small>Xuất file CSV tổng hợp nhân sự, phép & OT theo tháng/năm</small>
+          </button>
         </nav>
       ) : (
         <nav className="quick-actions-grid" aria-label="Lối tắt thao tác nhanh">
@@ -771,13 +847,19 @@ export default function Dashboard() {
             </Link>
           )}
           {isPureManager && (
-            <Link to="/leaves" className="quick-action-link">
+            <button
+              type="button"
+              className="quick-action-link"
+              onClick={() => setShowReportModal(true)}
+              style={{ textAlign: 'left', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+              aria-label="Xuất báo cáo định kỳ theo tháng/năm"
+            >
               <strong>
                 <mark className="quick-action-icon" aria-hidden="true"><Download size={18} /></mark>
-                Xuất Báo Cáo CSV
+                Báo Cáo Định Kỳ
               </strong>
-              <small>Lọc dữ liệu và trích xuất báo cáo nhân sự theo thời gian</small>
-            </Link>
+              <small>Trích xuất báo cáo nhân sự & nghỉ phép/OT theo tháng/năm</small>
+            </button>
           )}
         </nav>
       )}
@@ -1196,6 +1278,119 @@ export default function Dashboard() {
           </section>
         )}
       </section>
+
+      {/* Dialog Xuất Báo Cáo Định Kỳ Tháng / Năm */}
+      {isManager && (
+        <dialog
+          ref={reportDialogRef}
+          className="dialog"
+          aria-labelledby="report-dialog-title"
+          onClose={() => setShowReportModal(false)}
+        >
+          <header className="dialog-header">
+            <hgroup>
+              <h2 id="report-dialog-title">Xuất Báo Cáo Định Kỳ (Tháng / Năm)</h2>
+              <p>Tổng hợp chỉ số nhân sự, đơn nghỉ phép & tăng ca OT toàn diện.</p>
+            </hgroup>
+            <button
+              type="button"
+              className="btn btn-secondary compact-button"
+              onClick={() => setShowReportModal(false)}
+              aria-label="Đóng hộp thoại"
+            >
+              ✕
+            </button>
+          </header>
+
+          <form onSubmit={handleExportMonthlyReport}>
+            <fieldset disabled={isExportingReport}>
+              <legend className="visually-hidden">Tùy chọn trích xuất báo cáo định kỳ</legend>
+
+              <div className="form-grid">
+                <p className="field-group">
+                  <label htmlFor="report-year-select">Năm thống kê</label>
+                  <select
+                    id="report-year-select"
+                    value={reportYear}
+                    onChange={(e) => setReportYear(Number(e.target.value))}
+                  >
+                    {[2024, 2025, 2026, 2027].map((y) => (
+                      <option key={y} value={y}>
+                        Năm {y}
+                      </option>
+                    ))}
+                  </select>
+                </p>
+
+                <p className="field-group">
+                  <label htmlFor="report-month-select">Kỳ báo cáo</label>
+                  <select
+                    id="report-month-select"
+                    value={reportMonth}
+                    onChange={(e) => setReportMonth(e.target.value)}
+                  >
+                    <option value="">Cả năm {reportYear}</option>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                      <option key={m} value={m}>
+                        Tháng {m}/{reportYear}
+                      </option>
+                    ))}
+                  </select>
+                </p>
+              </div>
+
+              {isAdmin && (
+                <p className="field-group">
+                  <label htmlFor="report-dept-select">Phạm vi phòng ban</label>
+                  <select
+                    id="report-dept-select"
+                    value={reportDeptId}
+                    onChange={(e) => setReportDeptId(e.target.value)}
+                  >
+                    <option value="">Toàn nhà máy (Tất cả phòng ban)</option>
+                    {departmentsList.map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        [{dept.code}] {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                </p>
+              )}
+
+              {isPureManager && stats.deptInfo && (
+                <p className="field-group">
+                  <label htmlFor="report-dept-fixed">Phòng ban phụ trách</label>
+                  <input
+                    id="report-dept-fixed"
+                    type="text"
+                    readOnly
+                    value={`[${stats.deptInfo.code}] ${stats.deptInfo.name}`}
+                    disabled
+                  />
+                </p>
+              )}
+
+              <p className="muted" style={{ fontSize: 'var(--text-xs)', marginTop: 'var(--space-2)' }}>
+                File CSV xuất ra chuẩn UTF-8 BOM, tương thích hiển thị tiếng Việt trên Microsoft Excel, bao gồm số liệu nhân sự, tổng số đơn, đơn duyệt, từ chối, số ngày phép và giờ OT.
+              </p>
+
+              <footer className="action-row" style={{ marginTop: 'var(--space-4)' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowReportModal(false)}
+                  className="btn btn-secondary"
+                >
+                  Hủy bỏ
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={isExportingReport}>
+                  <Download size={14} aria-hidden="true" />
+                  {isExportingReport ? 'Đang trích xuất CSV...' : 'Tải Báo Cáo CSV'}
+                </button>
+              </footer>
+            </fieldset>
+          </form>
+        </dialog>
+      )}
     </section>
   );
 }

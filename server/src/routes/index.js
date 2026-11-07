@@ -8,6 +8,7 @@ import dashboardRoutes from './dashboardRoutes.js';
 import auditLogRoutes from './auditLogRoutes.js';
 import holidayRoutes from './holidayRoutes.js';
 import leaveBalanceRoutes from './leaveBalanceRoutes.js';
+import reportRoutes from './reportRoutes.js';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/dashboard', dashboardRoutes);
 router.use('/audit-logs', auditLogRoutes);
 router.use('/holidays', holidayRoutes);
 router.use('/leave-balances', leaveBalanceRoutes);
+router.use('/reports', reportRoutes);
 
 export default router;
