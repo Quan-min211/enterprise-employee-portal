@@ -200,6 +200,8 @@ export const getDashboardSummary = async (req, res, next) => {
     }
     // ────────────────────────────────────────────────────────────────────
 
+    const monthlyRequests = await calculateMonthlyRequests(req, new Date().getFullYear());
+
     const departmentLoad = recentLeaves.reduce((acc, request) => {
       const departmentName = request.applicant?.department?.name || 'Chưa phân bổ';
       acc[departmentName] = (acc[departmentName] || 0) + 1;
@@ -220,6 +222,7 @@ export const getDashboardSummary = async (req, res, next) => {
         recentAnnouncements,
         recentLeaves,
         pendingActionItems,
+        monthlyRequests,
         departmentLoad: Object.entries(departmentLoad).map(([department, total]) => ({
           department,
           total
@@ -231,6 +234,147 @@ export const getDashboardSummary = async (req, res, next) => {
         // Admin extras
         adminData
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Tính toán thống kê số đơn nghỉ phép & tăng ca (OT) qua 12 tháng trong năm
+ */
+export const calculateMonthlyRequests = async (req, targetYear) => {
+  const role = req.user.role;
+  const year = parseInt(targetYear, 10) || new Date().getFullYear();
+  const startDate = `${year}-01-01`;
+  const endDate = `${year}-12-31`;
+
+  const leaveWhere = {
+    start_date: {
+      [Op.between]: [startDate, endDate]
+    }
+  };
+
+  const include = [];
+
+  if (role === 'employee') {
+    leaveWhere.user_id = req.user.id;
+  } else if (role === 'manager') {
+    const manager = await User.findByPk(req.user.id, { attributes: ['department_id'] });
+    include.push({
+      model: User,
+      as: 'applicant',
+      attributes: ['id', 'department_id'],
+      where: { department_id: manager?.department_id || -1 },
+      required: true
+    });
+  } else if (role === 'admin' && req.query?.department_id) {
+    include.push({
+      model: User,
+      as: 'applicant',
+      attributes: ['id', 'department_id'],
+      where: { department_id: parseInt(req.query.department_id, 10) },
+      required: true
+    });
+  }
+
+  const requests = await LeaveRequest.findAll({
+    where: leaveWhere,
+    include,
+    attributes: [
+      'id',
+      'request_type',
+      'leave_type',
+      'status',
+      'start_date',
+      'day_count',
+      'ot_hours'
+    ]
+  });
+
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const monthNum = i + 1;
+    const padded = String(monthNum).padStart(2, '0');
+    return {
+      month: monthNum,
+      label: `T${monthNum}`,
+      fullLabel: `Tháng ${monthNum}`,
+      yearMonth: `${year}-${padded}`,
+      total: 0,
+      leaveCount: 0,
+      otCount: 0,
+      approvedCount: 0,
+      rejectedCount: 0,
+      pendingCount: 0,
+      cancelledCount: 0,
+      approvedLeaveDays: 0,
+      approvedOtHours: 0
+    };
+  });
+
+  for (const r of requests) {
+    const rawDate = r.start_date;
+    if (!rawDate) continue;
+    const dateStr = typeof rawDate === 'string' ? rawDate : new Date(rawDate).toISOString().slice(0, 10);
+    const parts = dateStr.split('-');
+    const m = parseInt(parts[1], 10);
+    if (m >= 1 && m <= 12) {
+      const bucket = months[m - 1];
+      bucket.total += 1;
+      if (r.request_type === 'overtime') {
+        bucket.otCount += 1;
+      } else {
+        bucket.leaveCount += 1;
+      }
+      if (r.status === 'approved') {
+        bucket.approvedCount += 1;
+        if (r.request_type === 'leave') {
+          bucket.approvedLeaveDays += Number(r.day_count || 0);
+        } else if (r.request_type === 'overtime') {
+          bucket.approvedOtHours += Number(r.ot_hours || 0);
+        }
+      } else if (r.status === 'rejected') {
+        bucket.rejectedCount += 1;
+      } else if (r.status === 'pending') {
+        bucket.pendingCount += 1;
+      } else if (r.status === 'cancelled') {
+        bucket.cancelledCount += 1;
+      }
+    }
+  }
+
+  months.forEach((m) => {
+    m.approvedLeaveDays = Number(m.approvedLeaveDays.toFixed(1));
+    m.approvedOtHours = Number(m.approvedOtHours.toFixed(1));
+  });
+
+  const yearTotal = requests.length;
+  const maxMonthTotal = Math.max(...months.map((m) => m.total), 0);
+  const peakMonth = months.reduce((max, curr) => (curr.total > max.total ? curr : max), months[0]);
+
+  return {
+    year,
+    yearTotal,
+    maxMonthTotal,
+    peakMonth:
+      peakMonth && peakMonth.total > 0
+        ? { month: peakMonth.month, label: peakMonth.fullLabel, total: peakMonth.total }
+        : null,
+    months
+  };
+};
+
+/**
+ * GET /api/dashboard/monthly-requests
+ * Trả về thống kê số đơn theo 12 tháng cho năm được chọn
+ */
+export const getMonthlyRequests = async (req, res, next) => {
+  try {
+    const year = parseInt(req.query.year, 10) || new Date().getFullYear();
+    const data = await calculateMonthlyRequests(req, year);
+    res.status(200).json({
+      success: true,
+      data
     });
   } catch (error) {
     next(error);

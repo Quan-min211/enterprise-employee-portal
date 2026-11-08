@@ -148,6 +148,28 @@ export default function Dashboard() {
   const [reportDeptId, setReportDeptId] = useState('');
   const [departmentsList, setDepartmentsList] = useState([]);
 
+  // Báo cáo số đơn theo tháng (Monthly requests report state)
+  const [monthlyStatsYear, setMonthlyStatsYear] = useState(new Date().getFullYear());
+  const [monthlyData, setMonthlyData] = useState(null);
+  const [monthlyLoading, setMonthlyLoading] = useState(false);
+  const [monthlyViewMode, setMonthlyViewMode] = useState('chart');
+
+  const handleMonthlyYearChange = async (newYear) => {
+    setMonthlyStatsYear(newYear);
+    setMonthlyLoading(true);
+    try {
+      const res = await dashboardApi.getMonthlyRequests({ year: newYear });
+      if (res?.data) {
+        setMonthlyData(res.data);
+      }
+    } catch (err) {
+      console.error('Error loading monthly requests:', err);
+      pushToast('Không thể tải dữ liệu thống kê tháng.', 'error');
+    } finally {
+      setMonthlyLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isAdmin) {
       departmentsApi
@@ -213,6 +235,9 @@ export default function Dashboard() {
 
         if (dashRes.status === 'fulfilled' && dashRes.value?.summary) {
           setStats(dashRes.value.summary);
+          if (dashRes.value.summary.monthlyRequests) {
+            setMonthlyData(dashRes.value.summary.monthlyRequests);
+          }
         }
         if (balRes.status === 'fulfilled' && balRes.value) {
           setLeaveBalance(balRes.value?.balance ?? balRes.value ?? null);
@@ -748,6 +773,234 @@ export default function Dashboard() {
     );
   };
 
+  /* ------------------------------------------------------------------ */
+  /* Báo cáo số đơn theo tháng (Monthly Requests Report Panel)         */
+  /* ------------------------------------------------------------------ */
+  const MonthlyRequestsReportPanel = () => {
+    const totalLeavesYear =
+      monthlyData?.months?.reduce((sum, m) => sum + m.leaveCount, 0) || 0;
+    const totalOtYear =
+      monthlyData?.months?.reduce((sum, m) => sum + m.otCount, 0) || 0;
+    const totalApprovedYear =
+      monthlyData?.months?.reduce((sum, m) => sum + m.approvedCount, 0) || 0;
+    const totalRejectedYear =
+      monthlyData?.months?.reduce((sum, m) => sum + m.rejectedCount, 0) || 0;
+    const totalPendingYear =
+      monthlyData?.months?.reduce((sum, m) => sum + m.pendingCount, 0) || 0;
+    const totalLeaveDaysYear = (
+      monthlyData?.months?.reduce((sum, m) => sum + m.approvedLeaveDays, 0) || 0
+    ).toFixed(1);
+    const totalOtHoursYear = (
+      monthlyData?.months?.reduce((sum, m) => sum + m.approvedOtHours, 0) || 0
+    ).toFixed(1);
+    const peakMonth = monthlyData?.peakMonth;
+
+    return (
+      <section className="panel monthly-report-panel" aria-labelledby="monthly-report-heading">
+        <header className="panel-header">
+          <hgroup>
+            <h2 id="monthly-report-heading">
+              {isAdmin
+                ? 'Báo Cáo Số Đơn Theo Tháng (Toàn Nhà Máy)'
+                : isPureManager
+                  ? 'Báo Cáo Số Đơn Theo Tháng (Phòng Ban)'
+                  : 'Báo Cáo Số Đơn Theo Tháng Của Tôi'}
+            </h2>
+            <p>Phân bố số lượng đơn nghỉ phép và tăng ca qua 12 tháng năm {monthlyStatsYear}</p>
+          </hgroup>
+          <form className="panel-controls-group" onSubmit={(e) => e.preventDefault()}>
+            <label htmlFor="monthly-year-select" className="sr-only">
+              Năm thống kê
+            </label>
+            <select
+              id="monthly-year-select"
+              value={monthlyStatsYear}
+              onChange={(e) => handleMonthlyYearChange(Number(e.target.value))}
+              aria-label="Chọn năm thống kê số đơn"
+            >
+              {[2024, 2025, 2026, 2027].map((y) => (
+                <option key={y} value={y}>
+                  Năm {y}
+                </option>
+              ))}
+            </select>
+            <menu className="action-row" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              <li>
+                <button
+                  type="button"
+                  className={`btn compact-button ${monthlyViewMode === 'chart' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setMonthlyViewMode('chart')}
+                >
+                  Biểu đồ cột
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className={`btn compact-button ${monthlyViewMode === 'table' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setMonthlyViewMode('table')}
+                >
+                  Bảng chi tiết
+                </button>
+              </li>
+            </menu>
+          </form>
+        </header>
+
+        {/* High-level yearly metric highlights */}
+        <section className="monthly-summary-badges" aria-label={`Tóm tắt số đơn năm ${monthlyStatsYear}`}>
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Tổng đơn cả năm</strong>
+            <data value={monthlyData?.yearTotal || 0} className="monthly-badge-value">
+              {monthlyData?.yearTotal || 0} <small>đơn</small>
+            </data>
+          </article>
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Đơn nghỉ phép</strong>
+            <data value={totalLeavesYear} className="monthly-badge-value">
+              {totalLeavesYear} <small>đơn ({totalLeaveDaysYear} ngày)</small>
+            </data>
+          </article>
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Đơn tăng ca (OT)</strong>
+            <data value={totalOtYear} className="monthly-badge-value">
+              {totalOtYear} <small>đơn ({totalOtHoursYear} giờ)</small>
+            </data>
+          </article>
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Tháng cao điểm</strong>
+            <data
+              value={peakMonth ? peakMonth.label : 'Chưa có'}
+              className="monthly-badge-value"
+            >
+              {peakMonth ? `${peakMonth.label} (${peakMonth.total} đơn)` : '0 đơn'}
+            </data>
+          </article>
+        </section>
+
+        {monthlyLoading ? (
+          <SkeletonCards count={3} />
+        ) : monthlyViewMode === 'chart' ? (
+          <figure
+            className="monthly-chart-container"
+            role="figure"
+            aria-label={`Biểu đồ phân bổ 12 tháng năm ${monthlyStatsYear}`}
+          >
+            <figcaption className="sr-only">
+              Biểu đồ cột thể hiện số lượng đơn nghỉ phép và tăng ca qua từng tháng
+            </figcaption>
+            <ol className="monthly-bar-chart">
+              {monthlyData?.months?.map((m) => {
+                const maxVal = monthlyData.maxMonthTotal || 1;
+                const pct = maxVal > 0 && m.total > 0 ? Math.max(Math.round((m.total / maxVal) * 100), 12) : 0;
+                return (
+                  <li key={m.month} className="monthly-bar-item">
+                    <data value={m.total} className="bar-val-badge">
+                      {m.total > 0 ? m.total : ''}
+                    </data>
+                    <p className="bar-column-wrapper">
+                      <meter
+                        min="0"
+                        max={maxVal}
+                        value={m.total}
+                        className="sr-only"
+                        aria-label={`${m.fullLabel}: ${m.total} đơn`}
+                      >
+                        {m.total}
+                      </meter>
+                      <data
+                        value={pct}
+                        className={`bar-column-fill ${m.otCount > 0 ? 'has-ot' : ''} ${m.total === 0 ? 'empty' : ''}`}
+                        style={{ height: m.total > 0 ? `${pct}%` : '3px' }}
+                      ></data>
+                    </p>
+                    <time dateTime={m.yearMonth} className="bar-month-caption">
+                      {m.label}
+                    </time>
+                    <aside className="bar-info-tooltip">
+                      <strong>
+                        {m.fullLabel} / {monthlyStatsYear}
+                      </strong>
+                      <p>Tổng: {m.total} đơn</p>
+                      <small>Nghỉ phép: {m.leaveCount} ({m.approvedLeaveDays} ngày)</small>
+                      <small>Tăng ca OT: {m.otCount} ({m.approvedOtHours} giờ)</small>
+                      <small>
+                        Đã duyệt: {m.approvedCount} | Từ chối: {m.rejectedCount}
+                      </small>
+                    </aside>
+                  </li>
+                );
+              })}
+            </ol>
+          </figure>
+        ) : (
+          <section className="table-shell" aria-label={`Bảng số liệu 12 tháng năm ${monthlyStatsYear}`}>
+            <table className="responsive-table monthly-table">
+              <caption>
+                Thống kê số lượng đơn nghỉ phép và làm thêm giờ qua 12 tháng trong năm {monthlyStatsYear}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Kỳ báo cáo</th>
+                  <th scope="col">Tổng đơn</th>
+                  <th scope="col">Đơn phép</th>
+                  <th scope="col">Đơn OT</th>
+                  <th scope="col">Đã duyệt</th>
+                  <th scope="col">Từ chối</th>
+                  <th scope="col">Chờ duyệt</th>
+                  <th scope="col">Ngày phép duyệt</th>
+                  <th scope="col">Giờ OT duyệt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthlyData?.months?.map((m) => (
+                  <tr key={m.month}>
+                    <td data-label="Kỳ báo cáo">
+                      <strong>{m.fullLabel}</strong>
+                    </td>
+                    <td data-label="Tổng đơn">
+                      <data value={m.total}>
+                        <strong>{m.total}</strong>
+                      </data>
+                    </td>
+                    <td data-label="Đơn phép">{m.leaveCount}</td>
+                    <td data-label="Đơn OT">{m.otCount}</td>
+                    <td data-label="Đã duyệt">
+                      <mark className="badge badge-success">{m.approvedCount}</mark>
+                    </td>
+                    <td data-label="Từ chối">
+                      <mark className="badge badge-danger">{m.rejectedCount}</mark>
+                    </td>
+                    <td data-label="Chờ duyệt">
+                      <mark className="badge badge-warning">{m.pendingCount}</mark>
+                    </td>
+                    <td data-label="Ngày phép duyệt">{m.approvedLeaveDays} ngày</td>
+                    <td data-label="Giờ OT duyệt">{m.approvedOtHours} giờ</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row">Tổng cả năm</th>
+                  <td>
+                    <strong>{monthlyData?.yearTotal || 0}</strong>
+                  </td>
+                  <td>{totalLeavesYear}</td>
+                  <td>{totalOtYear}</td>
+                  <td>{totalApprovedYear}</td>
+                  <td>{totalRejectedYear}</td>
+                  <td>{totalPendingYear}</td>
+                  <td>{totalLeaveDaysYear} ngày</td>
+                  <td>{totalOtHoursYear} giờ</td>
+                </tr>
+              </tfoot>
+            </table>
+          </section>
+        )}
+      </section>
+    );
+  };
+
   /* ================================================================== */
 
   return (
@@ -1077,6 +1330,9 @@ export default function Dashboard() {
             )}
           </section>
         )}
+
+        {/* Báo Cáo Số Đơn Theo Tháng */}
+        <MonthlyRequestsReportPanel />
 
         {/* Status Chart */}
         <section className="panel" aria-labelledby="leave-chart-heading">
