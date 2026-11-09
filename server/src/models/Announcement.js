@@ -28,6 +28,11 @@ export const Announcement = sequelize.define('Announcement', {
   expires_at: {
     type: DataTypes.DATE,
     allowNull: true
+  },
+  deleted_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    defaultValue: null
   }
 }, {
   tableName: 'announcements',

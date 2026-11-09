@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { query } from 'express-validator';
-import { getDashboardSummary, getMonthlyRequests } from '../controllers/dashboardController.js';
+import {
+  getDashboardSummary,
+  getMonthlyRequests,
+  getTopOtDepartments
+} from '../controllers/dashboardController.js';
 import { verifyToken } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validateRequest.js';
 
@@ -23,6 +27,23 @@ router.get(
   ],
   validateRequest,
   getMonthlyRequests
+);
+
+router.get(
+  '/top-ot-departments',
+  verifyToken,
+  [
+    query('year')
+      .optional()
+      .isInt({ min: 2020, max: 2100 })
+      .withMessage('Năm thống kê không hợp lệ (2020 - 2100).'),
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 50 })
+      .withMessage('Số lượng phòng ban không hợp lệ (1 - 50).')
+  ],
+  validateRequest,
+  getTopOtDepartments
 );
 
 export default router;

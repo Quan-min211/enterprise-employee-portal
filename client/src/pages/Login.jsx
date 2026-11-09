@@ -105,7 +105,7 @@ export default function Login() {
 
               <p className="field-group">
                 <label htmlFor="email">Email công vụ hoặc Mã nhân viên</label>
-                <div className="input-with-icon">
+                <span className="input-with-icon">
                   <Mail size={18} className="field-icon" aria-hidden="true" />
                   <input
                     id="email"
@@ -116,12 +116,12 @@ export default function Login() {
                     onChange={(e) => setEmail(e.target.value)}
                     autoComplete="username"
                   />
-                </div>
+                </span>
               </p>
 
               <p className="field-group">
                 <label htmlFor="password">Mật khẩu</label>
-                <div className="input-with-icon">
+                <span className="input-with-icon">
                   <Lock size={18} className="field-icon" aria-hidden="true" />
                   <input
                     id="password"
@@ -140,7 +140,7 @@ export default function Login() {
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
-                </div>
+                </span>
               </p>
 
               <aside className="login-options-row">

@@ -200,7 +200,10 @@ export const getDashboardSummary = async (req, res, next) => {
     }
     // ────────────────────────────────────────────────────────────────────
 
-    const monthlyRequests = await calculateMonthlyRequests(req, new Date().getFullYear());
+    const [monthlyRequests, topOtDepartments] = await Promise.all([
+      calculateMonthlyRequests(req, new Date().getFullYear()),
+      calculateTopOtDepartments(req, new Date().getFullYear(), 5)
+    ]);
 
     const departmentLoad = recentLeaves.reduce((acc, request) => {
       const departmentName = request.applicant?.department?.name || 'Chưa phân bổ';
@@ -223,6 +226,7 @@ export const getDashboardSummary = async (req, res, next) => {
         recentLeaves,
         pendingActionItems,
         monthlyRequests,
+        topOtDepartments,
         departmentLoad: Object.entries(departmentLoad).map(([department, total]) => ({
           department,
           total
@@ -372,6 +376,147 @@ export const getMonthlyRequests = async (req, res, next) => {
   try {
     const year = parseInt(req.query.year, 10) || new Date().getFullYear();
     const data = await calculateMonthlyRequests(req, year);
+    res.status(200).json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Tính toán xếp hạng các phòng ban có khối lượng làm thêm giờ (OT) nhiều nhất
+ */
+export const calculateTopOtDepartments = async (req, targetYear, limitCount = 5) => {
+  const year = parseInt(targetYear, 10) || new Date().getFullYear();
+  const limit = Math.min(Math.max(parseInt(limitCount, 10) || 5, 1), 50);
+  const startDate = `${year}-01-01`;
+  const endDate = `${year}-12-31`;
+
+  const departments = await Department.findAll({
+    order: [['code', 'ASC']],
+    attributes: ['id', 'code', 'name', 'description']
+  });
+
+  let managerDeptId = null;
+  if (req.user?.role === 'manager') {
+    const manager = await User.findByPk(req.user.id, { attributes: ['department_id'] });
+    managerDeptId = manager?.department_id || null;
+  }
+
+  const deptStats = [];
+
+  for (const dept of departments) {
+    const totalStaff = await User.count({
+      where: {
+        department_id: dept.id,
+        status: 'active'
+      }
+    });
+
+    const otRequests = await LeaveRequest.findAll({
+      where: {
+        request_type: 'overtime',
+        start_date: {
+          [Op.between]: [startDate, endDate]
+        }
+      },
+      include: [
+        {
+          model: User,
+          as: 'applicant',
+          attributes: ['id', 'department_id'],
+          where: { department_id: dept.id },
+          required: true
+        }
+      ],
+      attributes: ['id', 'status', 'ot_hours', 'day_count', 'start_date']
+    });
+
+    const totalRequests = otRequests.length;
+    const approvedRequests = otRequests.filter((r) => r.status === 'approved');
+    const approvedCount = approvedRequests.length;
+    const pendingCount = otRequests.filter((r) => r.status === 'pending').length;
+    const rejectedCount = otRequests.filter((r) => r.status === 'rejected').length;
+    const cancelledCount = otRequests.filter((r) => r.status === 'cancelled').length;
+
+    const totalOtHours = Number(
+      approvedRequests
+        .reduce((sum, r) => sum + Number(r.ot_hours || 0), 0)
+        .toFixed(1)
+    );
+
+    const avgOtHoursPerStaff =
+      totalStaff > 0 ? Number((totalOtHours / totalStaff).toFixed(1)) : 0;
+
+    deptStats.push({
+      id: dept.id,
+      code: dept.code,
+      name: dept.name,
+      totalStaff,
+      totalRequests,
+      approvedCount,
+      pendingCount,
+      rejectedCount,
+      cancelledCount,
+      totalOtHours,
+      avgOtHoursPerStaff,
+      isMyDepartment: managerDeptId === dept.id
+    });
+  }
+
+  // Sắp xếp: Ưu tiên nhiều giờ OT nhất -> số đơn nhiều nhất -> tên mã phòng ban
+  deptStats.sort((a, b) => {
+    if (b.totalOtHours !== a.totalOtHours) {
+      return b.totalOtHours - a.totalOtHours;
+    }
+    if (b.totalRequests !== a.totalRequests) {
+      return b.totalRequests - a.totalRequests;
+    }
+    return a.code.localeCompare(b.code);
+  });
+
+  deptStats.forEach((d, idx) => {
+    d.rank = idx + 1;
+  });
+
+  const factoryTotalOtHours = Number(
+    deptStats.reduce((sum, d) => sum + d.totalOtHours, 0).toFixed(1)
+  );
+  const factoryTotalOtRequests = deptStats.reduce((sum, d) => sum + d.totalRequests, 0);
+  const factoryApprovedOtRequests = deptStats.reduce((sum, d) => sum + d.approvedCount, 0);
+  const factoryPendingOtRequests = deptStats.reduce((sum, d) => sum + d.pendingCount, 0);
+  const factoryTotalStaff = deptStats.reduce((sum, d) => sum + d.totalStaff, 0);
+  const maxOtHours = Math.max(...deptStats.map((d) => d.totalOtHours), 1);
+
+  const topDepartments = deptStats.slice(0, limit);
+  const topDepartment = deptStats[0]?.totalOtHours > 0 ? deptStats[0] : null;
+
+  return {
+    year,
+    limit,
+    maxOtHours,
+    factoryTotalOtHours,
+    factoryTotalOtRequests,
+    factoryApprovedOtRequests,
+    factoryPendingOtRequests,
+    factoryTotalStaff,
+    topDepartment,
+    departments: topDepartments,
+    allDepartmentsCount: deptStats.length
+  };
+};
+
+/**
+ * GET /api/dashboard/top-ot-departments
+ * Trả về xếp hạng top phòng ban có nhiều OT
+ */
+export const getTopOtDepartments = async (req, res, next) => {
+  try {
+    const year = parseInt(req.query.year, 10) || new Date().getFullYear();
+    const limit = parseInt(req.query.limit, 10) || 5;
+    const data = await calculateTopOtDepartments(req, year, limit);
     res.status(200).json({
       success: true,
       data

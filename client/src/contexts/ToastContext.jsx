@@ -32,4 +32,9 @@ export function ToastProvider({ children }) {
   );
 }
 
-export const useToast = () => useContext(ToastContext);
+const defaultToastContext = {
+  pushToast: () => {},
+  removeToast: () => {}
+};
+
+export const useToast = () => useContext(ToastContext) || defaultToastContext;

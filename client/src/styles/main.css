@@ -2870,6 +2870,99 @@ figure.status-chart,
   border-top: 2px solid var(--border);
 }
 
+/* ==========================================================================
+   Top OT Departments Dashboard Widget
+   ========================================================================== */
+.top-ot-panel {
+  grid-column: 1 / -1;
+}
+
+.top-ot-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.top-ot-item {
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--ground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.top-ot-item:hover {
+  border-color: var(--accent);
+  transform: translateX(2px);
+}
+
+.top-ot-item.highlight-my-dept {
+  border-left: 4px solid var(--accent);
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.05) 0%, var(--ground) 100%);
+}
+
+.top-ot-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.top-ot-item-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 200px;
+}
+
+.top-ot-rank {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: var(--radius-xs);
+  min-width: 32px;
+  text-align: center;
+}
+
+.top-ot-hours-stat {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.top-ot-hours-stat strong {
+  font-size: var(--text-base);
+  color: #D97706;
+}
+
+.top-ot-meter-wrapper {
+  width: 100%;
+}
+
+.top-ot-meter {
+  width: 100%;
+  height: 8px;
+}
+
+.top-ot-table {
+  width: 100%;
+  margin-top: var(--space-3);
+}
+
+.highlight-row {
+  background-color: rgba(37, 99, 235, 0.06) !important;
+  font-weight: 600;
+}
+
+
 
 
 

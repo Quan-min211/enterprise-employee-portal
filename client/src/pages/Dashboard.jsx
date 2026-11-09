@@ -139,7 +139,8 @@ export default function Dashboard() {
   const isAdmin = user?.role === 'admin';
   const isManager = user?.role === 'admin' || user?.role === 'manager';
 
-  const { pushToast } = useToast();
+  const toast = useToast();
+  const pushToast = toast?.pushToast || (() => {});
   const reportDialogRef = useRef(null);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isExportingReport, setIsExportingReport] = useState(false);
@@ -167,6 +168,30 @@ export default function Dashboard() {
       pushToast('Không thể tải dữ liệu thống kê tháng.', 'error');
     } finally {
       setMonthlyLoading(false);
+    }
+  };
+
+  // Top phòng ban có nhiều OT (Top OT departments report state)
+  const [otYear, setOtYear] = useState(new Date().getFullYear());
+  const [otLimit, setOtLimit] = useState(5);
+  const [topOtData, setTopOtData] = useState(null);
+  const [otLoading, setOtLoading] = useState(false);
+  const [otViewMode, setOtViewMode] = useState('ranking');
+
+  const handleOtFilterChange = async (newYear, newLimit = otLimit) => {
+    setOtYear(newYear);
+    setOtLimit(newLimit);
+    setOtLoading(true);
+    try {
+      const res = await dashboardApi.getTopOtDepartments({ year: newYear, limit: newLimit });
+      if (res?.data) {
+        setTopOtData(res.data);
+      }
+    } catch (err) {
+      console.error('Error loading top OT departments:', err);
+      pushToast('Không thể tải xếp hạng làm thêm giờ.', 'error');
+    } finally {
+      setOtLoading(false);
     }
   };
 
@@ -237,6 +262,9 @@ export default function Dashboard() {
           setStats(dashRes.value.summary);
           if (dashRes.value.summary.monthlyRequests) {
             setMonthlyData(dashRes.value.summary.monthlyRequests);
+          }
+          if (dashRes.value.summary.topOtDepartments) {
+            setTopOtData(dashRes.value.summary.topOtDepartments);
           }
         }
         if (balRes.status === 'fulfilled' && balRes.value) {
@@ -1001,6 +1029,249 @@ export default function Dashboard() {
     );
   };
 
+  /* ------------------------------------------------------------------ */
+  /* Top phòng ban có nhiều OT (Top OT Departments Report Panel)        */
+  /* ------------------------------------------------------------------ */
+  const TopOtDepartmentsPanel = () => {
+    const factoryAvg =
+      topOtData?.factoryTotalStaff > 0
+        ? (topOtData.factoryTotalOtHours / topOtData.factoryTotalStaff).toFixed(1)
+        : '0.0';
+    const topDept = topOtData?.topDepartment;
+
+    return (
+      <section className="panel top-ot-panel" aria-labelledby="top-ot-heading">
+        <header className="panel-header">
+          <hgroup>
+            <h2 id="top-ot-heading">Top Phòng Ban Nhiều Giờ Tăng Ca (OT)</h2>
+            <p>Xếp hạng các bộ phận có khối lượng làm thêm giờ cao nhất trong năm {otYear}</p>
+          </hgroup>
+          <form className="panel-controls-group" onSubmit={(e) => e.preventDefault()}>
+            <label htmlFor="top-ot-year-select" className="sr-only">
+              Năm thống kê OT
+            </label>
+            <select
+              id="top-ot-year-select"
+              value={otYear}
+              onChange={(e) => handleOtFilterChange(Number(e.target.value), otLimit)}
+              aria-label="Chọn năm thống kê OT"
+            >
+              {[2024, 2025, 2026, 2027].map((y) => (
+                <option key={y} value={y}>
+                  Năm {y}
+                </option>
+              ))}
+            </select>
+
+            <label htmlFor="top-ot-limit-select" className="sr-only">
+              Số lượng hiển thị
+            </label>
+            <select
+              id="top-ot-limit-select"
+              value={otLimit}
+              onChange={(e) => handleOtFilterChange(otYear, Number(e.target.value))}
+              aria-label="Số lượng phòng ban hiển thị"
+            >
+              <option value={5}>Top 5 phòng ban</option>
+              <option value={8}>Top 8 phòng ban</option>
+              <option value={20}>Tất cả phòng ban</option>
+            </select>
+
+            <menu className="action-row" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              <li>
+                <button
+                  type="button"
+                  className={`btn compact-button ${otViewMode === 'ranking' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setOtViewMode('ranking')}
+                >
+                  Xếp hạng
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className={`btn compact-button ${otViewMode === 'table' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setOtViewMode('table')}
+                >
+                  Bảng chi tiết
+                </button>
+              </li>
+            </menu>
+          </form>
+        </header>
+
+        {/* High-level OT summary badges */}
+        <section className="monthly-summary-badges" aria-label={`Tóm tắt chỉ số làm thêm giờ năm ${otYear}`}>
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Tổng giờ OT nhà máy</strong>
+            <data value={topOtData?.factoryTotalOtHours || 0} className="monthly-badge-value">
+              {topOtData?.factoryTotalOtHours || 0} <small>giờ</small>
+            </data>
+          </article>
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Tổng số đơn OT</strong>
+            <data value={topOtData?.factoryTotalOtRequests || 0} className="monthly-badge-value">
+              {topOtData?.factoryTotalOtRequests || 0} <small>đơn ({topOtData?.factoryApprovedOtRequests || 0} đã duyệt)</small>
+            </data>
+          </article>
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Bộ phận OT nhiều nhất</strong>
+            <data value={topDept ? topDept.name : 'Chưa có'} className="monthly-badge-value">
+              {topDept ? `[${topDept.code}] ${topDept.totalOtHours}h` : 'Chưa có'}
+            </data>
+          </article>
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Trung bình/lao động</strong>
+            <data value={factoryAvg} className="monthly-badge-value">
+              {factoryAvg} <small>giờ/người</small>
+            </data>
+          </article>
+        </section>
+
+        {otLoading ? (
+          <SkeletonCards count={3} />
+        ) : (topOtData?.departments?.length || 0) === 0 ? (
+          <figure className="empty-state" role="status">
+            <figcaption>
+              <strong className="empty-title">Chưa có dữ liệu làm thêm giờ</strong>
+              <p className="muted">Không có đơn làm thêm giờ nào được ghi nhận trong năm {otYear}.</p>
+            </figcaption>
+          </figure>
+        ) : otViewMode === 'ranking' ? (
+          <ol className="top-ot-list" aria-label={`Xếp hạng phòng ban nhiều OT nhất năm ${otYear}`}>
+            {topOtData.departments.map((dept) => {
+              const maxVal = topOtData.maxOtHours || 1;
+              const pct = maxVal > 0 ? Math.round((dept.totalOtHours / maxVal) * 100) : 0;
+              return (
+                <li
+                  key={dept.id}
+                  className={`top-ot-item ${dept.isMyDepartment ? 'highlight-my-dept' : ''}`}
+                >
+                  <header className="top-ot-item-header">
+                    <p className="top-ot-item-title">
+                      <data
+                        value={dept.rank}
+                        className={`top-ot-rank badge ${dept.rank === 1 ? 'badge-warning' : dept.rank === 2 ? 'badge-accent' : 'badge-subtle'}`}
+                      >
+                        #{dept.rank}
+                      </data>
+                      <strong>
+                        [{dept.code}] {dept.name}
+                      </strong>
+                      {dept.isMyDepartment && (
+                        <mark className="badge badge-info" style={{ marginLeft: 'var(--space-2)' }}>
+                          Phòng ban của bạn
+                        </mark>
+                      )}
+                    </p>
+                    <data value={dept.totalOtHours} className="top-ot-hours-stat">
+                      <strong>{dept.totalOtHours}</strong> giờ
+                      <small className="muted">
+                        {' '}
+                        ({dept.totalRequests} đơn · TB {dept.avgOtHoursPerStaff}h/người)
+                      </small>
+                    </data>
+                  </header>
+                  <p className="top-ot-meter-wrapper">
+                    <meter
+                      min="0"
+                      max={maxVal}
+                      value={dept.totalOtHours}
+                      className="top-ot-meter"
+                      aria-label={`${dept.name}: ${dept.totalOtHours} giờ OT (${pct}% so với cao nhất)`}
+                    >
+                      {pct}%
+                    </meter>
+                  </p>
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <section className="table-shell" aria-label={`Bảng chi tiết xếp hạng OT các phòng ban năm ${otYear}`}>
+            <table className="responsive-table top-ot-table">
+              <caption>
+                Thống kê chi tiết khối lượng làm thêm giờ (OT) theo từng phòng ban năm {otYear}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Thứ hạng</th>
+                  <th scope="col">Phòng ban</th>
+                  <th scope="col">Nhân sự</th>
+                  <th scope="col">Tổng đơn OT</th>
+                  <th scope="col">Đã duyệt</th>
+                  <th scope="col">Chờ duyệt</th>
+                  <th scope="col">Tổng giờ OT</th>
+                  <th scope="col">TB/Nhân sự</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topOtData.departments.map((dept) => (
+                  <tr
+                    key={dept.id}
+                    className={dept.isMyDepartment ? 'highlight-row' : ''}
+                  >
+                    <td data-label="Thứ hạng">
+                      <data
+                        value={dept.rank}
+                        className={`badge ${dept.rank === 1 ? 'badge-warning' : dept.rank === 2 ? 'badge-accent' : 'badge-subtle'}`}
+                      >
+                        #{dept.rank}
+                      </data>
+                    </td>
+                    <td data-label="Phòng ban">
+                      <strong>
+                        [{dept.code}] {dept.name}
+                      </strong>
+                      {dept.isMyDepartment && (
+                        <mark className="badge badge-info" style={{ marginLeft: 'var(--space-2)' }}>
+                          Bạn quản lý
+                        </mark>
+                      )}
+                    </td>
+                    <td data-label="Nhân sự">{dept.totalStaff} người</td>
+                    <td data-label="Tổng đơn OT">
+                      <strong>{dept.totalRequests}</strong>
+                    </td>
+                    <td data-label="Đã duyệt">
+                      <mark className="badge badge-success">{dept.approvedCount}</mark>
+                    </td>
+                    <td data-label="Chờ duyệt">
+                      <mark className="badge badge-warning">{dept.pendingCount}</mark>
+                    </td>
+                    <td data-label="Tổng giờ OT">
+                      <strong style={{ color: '#D97706' }}>{dept.totalOtHours} giờ</strong>
+                    </td>
+                    <td data-label="TB/Nhân sự">{dept.avgOtHoursPerStaff} giờ/người</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row" colSpan={2}>
+                    Tổng cộng
+                  </th>
+                  <td>{topOtData.factoryTotalStaff} người</td>
+                  <td>
+                    <strong>{topOtData.factoryTotalOtRequests}</strong>
+                  </td>
+                  <td>{topOtData.factoryApprovedOtRequests}</td>
+                  <td>{topOtData.factoryPendingOtRequests}</td>
+                  <td>
+                    <strong style={{ color: '#D97706' }}>
+                      {topOtData.factoryTotalOtHours} giờ
+                    </strong>
+                  </td>
+                  <td>{factoryAvg} giờ/người</td>
+                </tr>
+              </tfoot>
+            </table>
+          </section>
+        )}
+      </section>
+    );
+  };
+
   /* ================================================================== */
 
   return (
@@ -1333,6 +1604,9 @@ export default function Dashboard() {
 
         {/* Báo Cáo Số Đơn Theo Tháng */}
         <MonthlyRequestsReportPanel />
+
+        {/* Top Phòng Ban Có Nhiều OT */}
+        <TopOtDepartmentsPanel />
 
         {/* Status Chart */}
         <section className="panel" aria-labelledby="leave-chart-heading">

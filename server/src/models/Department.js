@@ -28,6 +28,11 @@ export const Department = sequelize.define('Department', {
     type: DataTypes.ENUM('active', 'inactive'),
     defaultValue: 'active',
     allowNull: false
+  },
+  deleted_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    defaultValue: null
   }
   // manager_id FK is defined via association in models/index.js (added in migration 002)
 }, {

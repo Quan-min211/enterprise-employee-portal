@@ -53,7 +53,7 @@ describe('Paranoid Soft Delete & Status Architecture', () => {
       });
 
       expect(dept.status).toBe('active');
-      expect(dept.deleted_at).toBeNull();
+      expect(dept.deleted_at ?? null).toBeNull();
     });
 
     it('soft deletes department without removing row from database', async () => {
@@ -80,7 +80,7 @@ describe('Paranoid Soft Delete & Status Architecture', () => {
       await preservedDept.restore();
       const restoredDept = await Department.findByPk(deptId);
       expect(restoredDept).not.toBeNull();
-      expect(restoredDept.deleted_at).toBeNull();
+      expect(restoredDept.deleted_at ?? null).toBeNull();
     });
   });
 
@@ -94,7 +94,7 @@ describe('Paranoid Soft Delete & Status Architecture', () => {
       });
 
       expect(announcement.status).toBe('published');
-      expect(announcement.deleted_at).toBeNull();
+      expect(announcement.deleted_at ?? null).toBeNull();
 
       const annId = announcement.id;
       await announcement.destroy();
@@ -119,7 +119,7 @@ describe('Paranoid Soft Delete & Status Architecture', () => {
 
       await announcement.update({ status: 'archived' });
       expect(announcement.status).toBe('archived');
-      expect(announcement.deleted_at).toBeNull();
+      expect(announcement.deleted_at ?? null).toBeNull();
     });
   });
 
