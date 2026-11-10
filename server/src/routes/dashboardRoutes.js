@@ -3,7 +3,8 @@ import { query } from 'express-validator';
 import {
   getDashboardSummary,
   getMonthlyRequests,
-  getTopOtDepartments
+  getTopOtDepartments,
+  getApprovalRate
 } from '../controllers/dashboardController.js';
 import { verifyToken } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validateRequest.js';
@@ -44,6 +45,27 @@ router.get(
   ],
   validateRequest,
   getTopOtDepartments
+);
+
+router.get(
+  '/approval-rate',
+  verifyToken,
+  [
+    query('year')
+      .optional()
+      .isInt({ min: 2020, max: 2100 })
+      .withMessage('Năm thống kê không hợp lệ (2020 - 2100).'),
+    query('department_id')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('Mã phòng ban không hợp lệ.'),
+    query('request_type')
+      .optional()
+      .isIn(['all', 'leave', 'overtime'])
+      .withMessage('Loại đơn không hợp lệ (all, leave, overtime).')
+  ],
+  validateRequest,
+  getApprovalRate
 );
 
 export default router;

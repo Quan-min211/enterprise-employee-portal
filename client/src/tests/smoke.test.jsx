@@ -62,6 +62,55 @@ vi.mock('../api/dashboardApi', () => ({
         deptEmployeeCount: null,
         deptInfo: null,
         urgentAnnouncements: [],
+        approvalStats: {
+          year: 2026,
+          totalRequests: 14,
+          approvedCount: 10,
+          rejectedCount: 2,
+          pendingCount: 2,
+          cancelledCount: 0,
+          decidedCount: 12,
+          approvalRate: 83.3,
+          rejectionRate: 16.7,
+          pendingRate: 14.3,
+          avgProcessingHours: 2.5,
+          byType: {
+            leave: {
+              total: 10,
+              approved: 8,
+              rejected: 1,
+              pending: 1,
+              decided: 9,
+              approvalRate: 88.9,
+              rejectionRate: 11.1,
+              totalApprovedDays: 14
+            },
+            overtime: {
+              total: 4,
+              approved: 2,
+              rejected: 1,
+              pending: 1,
+              decided: 3,
+              approvalRate: 66.7,
+              rejectionRate: 33.3,
+              totalApprovedHours: 12
+            }
+          },
+          monthlyTrend: Array.from({ length: 12 }, (_, i) => ({
+            month: i + 1,
+            label: `T${i + 1}`,
+            fullLabel: `Tháng ${i + 1}`,
+            total: 0,
+            approved: 0,
+            rejected: 0,
+            pending: 0,
+            cancelled: 0,
+            decided: 0,
+            approvalRate: 0,
+            rejectionRate: 0
+          })),
+          departmentComparison: []
+        },
         adminData: {
           accounts: {
             total: 45,
@@ -93,6 +142,17 @@ vi.mock('../api/dashboardApi', () => ({
             uptime: 3600
           }
         }
+      }
+    }),
+    getMonthlyRequests: vi.fn().mockResolvedValue({ data: { months: [] } }),
+    getTopOtDepartments: vi.fn().mockResolvedValue({ data: { departments: [] } }),
+    getApprovalRate: vi.fn().mockResolvedValue({
+      data: {
+        totalRequests: 0,
+        approvalRate: 0,
+        rejectionRate: 0,
+        monthlyTrend: [],
+        departmentComparison: []
       }
     })
   }

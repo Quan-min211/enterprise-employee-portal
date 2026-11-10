@@ -195,6 +195,39 @@ export default function Dashboard() {
     }
   };
 
+  // Báo cáo tỷ lệ duyệt / từ chối (Approval Rate Report state)
+  const [approvalStatsYear, setApprovalStatsYear] = useState(new Date().getFullYear());
+  const [approvalRequestType, setApprovalRequestType] = useState('all');
+  const [approvalDeptId, setApprovalDeptId] = useState('');
+  const [approvalData, setApprovalData] = useState(null);
+  const [approvalLoading, setApprovalLoading] = useState(false);
+  const [approvalViewMode, setApprovalViewMode] = useState('overview');
+
+  const handleApprovalFilterChange = async (
+    newYear,
+    newType = approvalRequestType,
+    newDeptId = approvalDeptId
+  ) => {
+    setApprovalStatsYear(newYear);
+    setApprovalRequestType(newType);
+    setApprovalDeptId(newDeptId);
+    setApprovalLoading(true);
+    try {
+      const params = { year: newYear };
+      if (newType && newType !== 'all') params.request_type = newType;
+      if (newDeptId) params.department_id = newDeptId;
+      const res = await dashboardApi.getApprovalRate(params);
+      if (res?.data) {
+        setApprovalData(res.data);
+      }
+    } catch (err) {
+      console.error('Error loading approval rate stats:', err);
+      pushToast('Không thể tải báo cáo tỷ lệ duyệt/từ chối.', 'error');
+    } finally {
+      setApprovalLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isAdmin) {
       departmentsApi
@@ -265,6 +298,9 @@ export default function Dashboard() {
           }
           if (dashRes.value.summary.topOtDepartments) {
             setTopOtData(dashRes.value.summary.topOtDepartments);
+          }
+          if (dashRes.value.summary.approvalStats) {
+            setApprovalData(dashRes.value.summary.approvalStats);
           }
         }
         if (balRes.status === 'fulfilled' && balRes.value) {
@@ -1272,6 +1308,457 @@ export default function Dashboard() {
     );
   };
 
+  /* ------------------------------------------------------------------ */
+  /* Báo cáo tỷ lệ duyệt / từ chối (Approval Rate Report Panel)         */
+  /* ------------------------------------------------------------------ */
+  const ApprovalRateReportPanel = () => {
+    return (
+      <section className="panel approval-rate-panel" aria-labelledby="approval-rate-heading">
+        <header className="panel-header">
+          <hgroup>
+            <h2 id="approval-rate-heading">
+              {isAdmin
+                ? 'Báo Cáo Tỷ Lệ Duyệt / Từ Chối (Toàn Nhà Máy)'
+                : isPureManager
+                  ? 'Báo Cáo Tỷ Lệ Duyệt / Từ Chối (Phòng Ban)'
+                  : 'Báo Cáo Tỷ Lệ Duyệt / Từ Chối Của Tôi'}
+            </h2>
+            <p>
+              Hiệu suất giải quyết đơn nghỉ phép và tăng ca năm {approvalStatsYear}
+              {approvalRequestType === 'leave'
+                ? ' (Chỉ đơn nghỉ phép)'
+                : approvalRequestType === 'overtime'
+                  ? ' (Chỉ đơn làm thêm giờ)'
+                  : ' (Tất cả loại đơn)'}
+            </p>
+          </hgroup>
+          <form className="panel-controls-group" onSubmit={(e) => e.preventDefault()}>
+            <label htmlFor="approval-year-select" className="sr-only">
+              Năm thống kê
+            </label>
+            <select
+              id="approval-year-select"
+              value={approvalStatsYear}
+              onChange={(e) =>
+                handleApprovalFilterChange(Number(e.target.value), approvalRequestType, approvalDeptId)
+              }
+              aria-label="Chọn năm thống kê tỷ lệ duyệt"
+            >
+              {[2024, 2025, 2026, 2027].map((y) => (
+                <option key={y} value={y}>
+                  Năm {y}
+                </option>
+              ))}
+            </select>
+
+            <label htmlFor="approval-type-select" className="sr-only">
+              Loại đơn
+            </label>
+            <select
+              id="approval-type-select"
+              value={approvalRequestType}
+              onChange={(e) =>
+                handleApprovalFilterChange(approvalStatsYear, e.target.value, approvalDeptId)
+              }
+              aria-label="Chọn loại đơn thống kê"
+            >
+              <option value="all">Tất cả loại đơn</option>
+              <option value="leave">Chỉ nghỉ phép</option>
+              <option value="overtime">Chỉ tăng ca (OT)</option>
+            </select>
+
+            {isAdmin && (
+              <>
+                <label htmlFor="approval-dept-select" className="sr-only">
+                  Phòng ban
+                </label>
+                <select
+                  id="approval-dept-select"
+                  value={approvalDeptId}
+                  onChange={(e) =>
+                    handleApprovalFilterChange(approvalStatsYear, approvalRequestType, e.target.value)
+                  }
+                  aria-label="Lọc theo phòng ban"
+                >
+                  <option value="">Toàn bộ nhà máy</option>
+                  {departmentsList.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      [{d.code}] {d.name}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+
+            <menu className="action-row" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              <li>
+                <button
+                  type="button"
+                  className={`btn compact-button ${approvalViewMode === 'overview' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setApprovalViewMode('overview')}
+                >
+                  Tổng quan
+                </button>
+              </li>
+              {(isAdmin || isPureManager) && (
+                <li>
+                  <button
+                    type="button"
+                    className={`btn compact-button ${approvalViewMode === 'departments' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setApprovalViewMode('departments')}
+                  >
+                    Phòng ban
+                  </button>
+                </li>
+              )}
+              <li>
+                <button
+                  type="button"
+                  className={`btn compact-button ${approvalViewMode === 'table' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setApprovalViewMode('table')}
+                >
+                  12 tháng
+                </button>
+              </li>
+            </menu>
+          </form>
+        </header>
+
+        {/* KPI Badges */}
+        <section
+          className="monthly-summary-badges"
+          aria-label={`Tóm tắt chỉ số duyệt đơn năm ${approvalStatsYear}`}
+        >
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Tỷ lệ duyệt (Approval)</strong>
+            <data value={approvalData?.approvalRate ?? 0} className="monthly-badge-value text-success">
+              {approvalData?.approvalRate ?? 0}%
+            </data>
+            <small className="muted">
+              {approvalData?.approvedCount || 0} / {approvalData?.decidedCount || 0} đơn đã giải quyết
+            </small>
+          </article>
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Tỷ lệ từ chối (Rejection)</strong>
+            <data value={approvalData?.rejectionRate ?? 0} className="monthly-badge-value text-danger">
+              {approvalData?.rejectionRate ?? 0}%
+            </data>
+            <small className="muted">{approvalData?.rejectedCount || 0} đơn không được duyệt</small>
+          </article>
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Đang chờ xử lý (Pending)</strong>
+            <data value={approvalData?.pendingCount ?? 0} className="monthly-badge-value text-warning">
+              {approvalData?.pendingCount || 0} <small>đơn ({approvalData?.pendingRate ?? 0}%)</small>
+            </data>
+            <small className="muted">Tổng {approvalData?.totalRequests || 0} đơn phát sinh</small>
+          </article>
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Thời gian phản hồi TB</strong>
+            <data value={approvalData?.avgProcessingHours ?? 0} className="monthly-badge-value">
+              {approvalData?.avgProcessingHours && approvalData.avgProcessingHours > 0
+                ? `${approvalData.avgProcessingHours}h`
+                : '< 1 giờ'}
+            </data>
+            <small className="muted">Từ khi tạo đến khi duyệt/từ chối</small>
+          </article>
+        </section>
+
+        {approvalLoading ? (
+          <SkeletonCards count={3} />
+        ) : !approvalData || approvalData.totalRequests === 0 ? (
+          <figure className="empty-state" role="status">
+            <figcaption>
+              <strong className="empty-title">Chưa có dữ liệu xử lý đơn</strong>
+              <p className="muted">
+                Không tìm thấy đơn nghỉ phép hoặc tăng ca nào phù hợp với bộ lọc trong năm {approvalStatsYear}.
+              </p>
+            </figcaption>
+          </figure>
+        ) : approvalViewMode === 'overview' ? (
+          <section className="approval-overview-view" aria-label="Phân tích tổng quan và xu hướng">
+            {/* Phân loại theo loại đơn */}
+            {approvalData.byType && (
+              <section className="approval-type-grid" aria-label="Tỷ lệ duyệt theo từng phân loại đơn">
+                <article className="approval-type-card">
+                  <header className="approval-type-header">
+                    <h3 className="approval-type-title">📋 Đơn Nghỉ Phép (Leave)</h3>
+                    <mark className="badge badge-normal">{approvalData.byType.leave.total} đơn</mark>
+                  </header>
+                  <dl className="approval-type-metrics">
+                    <dt>Đã duyệt:</dt>
+                    <dd>
+                      <strong className="text-success">{approvalData.byType.leave.approved}</strong> (
+                      {approvalData.byType.leave.totalApprovedDays} ngày công)
+                    </dd>
+                    <dt>Từ chối:</dt>
+                    <dd>
+                      <strong className="text-danger">{approvalData.byType.leave.rejected}</strong>
+                    </dd>
+                    <dt>Đang chờ:</dt>
+                    <dd>
+                      <strong className="text-warning">{approvalData.byType.leave.pending}</strong>
+                    </dd>
+                    <dt>Tỷ lệ duyệt:</dt>
+                    <dd>
+                      <strong className="text-success">
+                        {approvalData.byType.leave.approvalRate}%
+                      </strong>{' '}
+                      <small className="muted">
+                        ({approvalData.byType.leave.decided} đơn đã giải quyết)
+                      </small>
+                    </dd>
+                  </dl>
+                  <figure className="approval-meter-container">
+                    <meter
+                      min="0"
+                      max="100"
+                      value={approvalData.byType.leave.approvalRate}
+                      className="approval-meter-bar"
+                      aria-label={`Tỷ lệ duyệt đơn phép: ${approvalData.byType.leave.approvalRate}%`}
+                    >
+                      {approvalData.byType.leave.approvalRate}%
+                    </meter>
+                  </figure>
+                </article>
+
+                <article className="approval-type-card">
+                  <header className="approval-type-header">
+                    <h3 className="approval-type-title">⚡ Đơn Tăng Ca (Overtime)</h3>
+                    <mark className="badge badge-warning">{approvalData.byType.overtime.total} đơn</mark>
+                  </header>
+                  <dl className="approval-type-metrics">
+                    <dt>Đã duyệt:</dt>
+                    <dd>
+                      <strong className="text-success">{approvalData.byType.overtime.approved}</strong> (
+                      {approvalData.byType.overtime.totalApprovedHours} giờ OT)
+                    </dd>
+                    <dt>Từ chối:</dt>
+                    <dd>
+                      <strong className="text-danger">{approvalData.byType.overtime.rejected}</strong>
+                    </dd>
+                    <dt>Đang chờ:</dt>
+                    <dd>
+                      <strong className="text-warning">{approvalData.byType.overtime.pending}</strong>
+                    </dd>
+                    <dt>Tỷ lệ duyệt:</dt>
+                    <dd>
+                      <strong className="text-success">
+                        {approvalData.byType.overtime.approvalRate}%
+                      </strong>{' '}
+                      <small className="muted">
+                        ({approvalData.byType.overtime.decided} đơn đã giải quyết)
+                      </small>
+                    </dd>
+                  </dl>
+                  <figure className="approval-meter-container">
+                    <meter
+                      min="0"
+                      max="100"
+                      value={approvalData.byType.overtime.approvalRate}
+                      className="approval-meter-bar"
+                      aria-label={`Tỷ lệ duyệt đơn tăng ca: ${approvalData.byType.overtime.approvalRate}%`}
+                    >
+                      {approvalData.byType.overtime.approvalRate}%
+                    </meter>
+                  </figure>
+                </article>
+              </section>
+            )}
+
+            {/* Xu hướng 12 tháng */}
+            {approvalData.monthlyTrend && (
+              <section
+                className="approval-trend-container"
+                aria-label={`Xu hướng tỷ lệ duyệt 12 tháng năm ${approvalStatsYear}`}
+              >
+                <header className="approval-trend-header">
+                  <h3>📈 Diễn Biến Tỷ Lệ Duyệt / Từ Chối Qua 12 Tháng</h3>
+                  <small className="muted">Tỷ lệ tính trên số đơn đã giải quyết trong từng tháng</small>
+                </header>
+                <ol className="approval-trend-grid">
+                  {approvalData.monthlyTrend.map((m) => (
+                    <li key={m.month} className="approval-trend-col">
+                      <header className="trend-month-header">
+                        <strong>{m.label}</strong>
+                        <small className="muted">{m.total} đơn</small>
+                      </header>
+                      <figure className="trend-bar-wrapper">
+                        <meter
+                          min="0"
+                          max="100"
+                          value={m.approvalRate}
+                          className="trend-meter-vertical"
+                          aria-label={`${m.fullLabel}: Tỷ lệ duyệt ${m.approvalRate}%, từ chối ${m.rejectionRate}%`}
+                        >
+                          {m.approvalRate}%
+                        </meter>
+                      </figure>
+                      <footer className="trend-month-footer">
+                        <data
+                          value={m.approvalRate}
+                          className={`trend-rate-data ${
+                            m.decided === 0
+                              ? 'muted'
+                              : m.approvalRate >= 80
+                                ? 'text-success'
+                                : 'text-warning'
+                          }`}
+                        >
+                          {m.decided === 0 ? '-' : `${m.approvalRate}%`}
+                        </data>
+                        {m.rejected > 0 && (
+                          <small className="text-danger">({m.rejected} loại)</small>
+                        )}
+                      </footer>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+          </section>
+        ) : approvalViewMode === 'departments' && approvalData.departmentComparison ? (
+          <section
+            className="table-shell"
+            aria-label={`So sánh tỷ lệ duyệt đơn giữa các phòng ban năm ${approvalStatsYear}`}
+          >
+            <table className="responsive-table approval-dept-table">
+              <caption>
+                So sánh tỷ lệ phê duyệt và từ chối đơn theo từng phòng ban năm {approvalStatsYear}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Mã PB</th>
+                  <th scope="col">Phòng ban</th>
+                  <th scope="col">Tổng đơn</th>
+                  <th scope="col">Đã duyệt</th>
+                  <th scope="col">Từ chối</th>
+                  <th scope="col">Chờ duyệt</th>
+                  <th scope="col">Tỷ lệ duyệt</th>
+                  <th scope="col">Tỷ lệ từ chối</th>
+                </tr>
+              </thead>
+              <tbody>
+                {approvalData.departmentComparison.map((d) => (
+                  <tr key={d.id} className={d.isMyDepartment ? 'highlight-row' : ''}>
+                    <th scope="row">
+                      <code>{d.code}</code>
+                      {d.isMyDepartment && (
+                        <mark className="badge badge-info" style={{ marginLeft: 'var(--space-2)' }}>
+                          Của bạn
+                        </mark>
+                      )}
+                    </th>
+                    <td>{d.name}</td>
+                    <td>
+                      <strong>{d.totalRequests}</strong>
+                    </td>
+                    <td className="text-success">{d.approvedCount}</td>
+                    <td className="text-danger">{d.rejectedCount}</td>
+                    <td className="text-warning">{d.pendingCount}</td>
+                    <td>
+                      <data value={d.approvalRate} className="rate-badge success">
+                        {d.decidedCount > 0 ? `${d.approvalRate}%` : 'Chưa có'}
+                      </data>
+                    </td>
+                    <td>
+                      <data value={d.rejectionRate} className="rate-badge danger">
+                        {d.decidedCount > 0 ? `${d.rejectionRate}%` : '0%'}
+                      </data>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        ) : (
+          <section
+            className="table-shell"
+            aria-label={`Bảng chi tiết tỷ lệ duyệt 12 tháng năm ${approvalStatsYear}`}
+          >
+            <table className="responsive-table approval-monthly-table">
+              <caption>
+                Bảng thống kê chi tiết tỷ lệ duyệt và từ chối qua 12 tháng năm {approvalStatsYear}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Tháng</th>
+                  <th scope="col">Tổng đơn</th>
+                  <th scope="col">Đã duyệt</th>
+                  <th scope="col">Từ chối</th>
+                  <th scope="col">Chờ xử lý</th>
+                  <th scope="col">Đã hủy</th>
+                  <th scope="col">Đã giải quyết</th>
+                  <th scope="col">Tỷ lệ duyệt</th>
+                  <th scope="col">Tỷ lệ từ chối</th>
+                </tr>
+              </thead>
+              <tbody>
+                {approvalData.monthlyTrend.map((m) => (
+                  <tr key={m.month}>
+                    <th scope="row">
+                      <strong>{m.fullLabel}</strong>
+                    </th>
+                    <td>{m.total}</td>
+                    <td className="text-success">{m.approved}</td>
+                    <td className="text-danger">{m.rejected}</td>
+                    <td className="text-warning">{m.pending}</td>
+                    <td>{m.cancelled}</td>
+                    <td>{m.decided}</td>
+                    <td>
+                      <data
+                        value={m.approvalRate}
+                        className={`rate-badge ${m.decided === 0 ? '' : 'success'}`}
+                      >
+                        {m.decided > 0 ? `${m.approvalRate}%` : '-'}
+                      </data>
+                    </td>
+                    <td>
+                      <data
+                        value={m.rejectionRate}
+                        className={`rate-badge ${m.rejected > 0 ? 'danger' : ''}`}
+                      >
+                        {m.decided > 0 ? `${m.rejectionRate}%` : '-'}
+                      </data>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row">Tổng cả năm {approvalStatsYear}</th>
+                  <td>
+                    <strong>{approvalData.totalRequests}</strong>
+                  </td>
+                  <td className="text-success">
+                    <strong>{approvalData.approvedCount}</strong>
+                  </td>
+                  <td className="text-danger">
+                    <strong>{approvalData.rejectedCount}</strong>
+                  </td>
+                  <td className="text-warning">
+                    <strong>{approvalData.pendingCount}</strong>
+                  </td>
+                  <td>
+                    <strong>{approvalData.cancelledCount}</strong>
+                  </td>
+                  <td>
+                    <strong>{approvalData.decidedCount}</strong>
+                  </td>
+                  <td className="text-success">
+                    <strong>{approvalData.approvalRate}%</strong>
+                  </td>
+                  <td className="text-danger">
+                    <strong>{approvalData.rejectionRate}%</strong>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </section>
+        )}
+      </section>
+    );
+  };
+
   /* ================================================================== */
 
   return (
@@ -1607,6 +2094,9 @@ export default function Dashboard() {
 
         {/* Top Phòng Ban Có Nhiều OT */}
         <TopOtDepartmentsPanel />
+
+        {/* Báo Cáo Tỷ Lệ Duyệt / Từ Chối */}
+        <ApprovalRateReportPanel />
 
         {/* Status Chart */}
         <section className="panel" aria-labelledby="leave-chart-heading">
