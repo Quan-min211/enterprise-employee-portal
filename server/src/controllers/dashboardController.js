@@ -729,7 +729,7 @@ export const calculateApprovalStats = async (req, targetYear, options = {}) => {
   const avgProcessingHours = decidedWithTimeCount > 0 ? Number((totalDecisionHours / decidedWithTimeCount).toFixed(1)) : 0;
 
   // Bảng so sánh giữa các phòng ban (Admin và Manager)
-  let departmentComparison = [];
+  const departmentComparison = [];
   if (role === 'admin' || role === 'manager') {
     const departments = await Department.findAll({
       order: [['code', 'ASC']],
