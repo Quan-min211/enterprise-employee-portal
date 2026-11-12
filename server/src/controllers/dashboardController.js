@@ -1,5 +1,13 @@
 import { Op } from 'sequelize';
-import { Announcement, Department, Holiday, LeaveRequest, User, AuditLog } from '../models/index.js';
+import {
+  Announcement,
+  Department,
+  Holiday,
+  LeaveRequest,
+  LeaveBalance,
+  User,
+  AuditLog
+} from '../models/index.js';
 
 const buildScopedLeaveInclude = async (req) => {
   if (req.user.role !== 'manager') return [];
@@ -200,10 +208,11 @@ export const getDashboardSummary = async (req, res, next) => {
     }
     // ────────────────────────────────────────────────────────────────────
 
-    const [monthlyRequests, topOtDepartments, approvalStats] = await Promise.all([
+    const [monthlyRequests, topOtDepartments, approvalStats, leaveBalanceStats] = await Promise.all([
       calculateMonthlyRequests(req, new Date().getFullYear()),
       calculateTopOtDepartments(req, new Date().getFullYear(), 5),
-      calculateApprovalStats(req, new Date().getFullYear())
+      calculateApprovalStats(req, new Date().getFullYear()),
+      calculateLeaveBalanceStats(req, new Date().getFullYear())
     ]);
 
     const departmentLoad = recentLeaves.reduce((acc, request) => {
@@ -229,6 +238,7 @@ export const getDashboardSummary = async (req, res, next) => {
         monthlyRequests,
         topOtDepartments,
         approvalStats,
+        leaveBalanceStats,
         departmentLoad: Object.entries(departmentLoad).map(([department, total]) => ({
           department,
           total
@@ -821,6 +831,265 @@ export const getApprovalRate = async (req, res, next) => {
     const data = await calculateApprovalStats(req, year, {
       request_type: req.query.request_type,
       department_id: req.query.department_id
+    });
+    res.status(200).json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Tính toán thống kê số ngày phép đã dùng / còn lại của người lao động
+ * Hỗ trợ lọc theo năm, phòng ban và phân nhóm tiến độ sử dụng (tiers)
+ * Phân quyền:
+ * - Admin: Thống kê toàn nhà máy hoặc theo phòng ban, danh sách nhân viên và bảng so sánh các phòng ban.
+ * - Manager: Thống kê trong phạm vi phòng ban phụ trách, danh sách nhân viên trong bộ phận.
+ * - Employee: Thống kê số dư phép cá nhân (định mức, chuyển tiếp, đã dùng, còn lại, tiến độ).
+ */
+export const calculateLeaveBalanceStats = async (req, targetYear, options = {}) => {
+  const role = req.user?.role || 'employee';
+  const year = parseInt(targetYear, 10) || new Date().getFullYear();
+  const filterDeptId = options.department_id || req.query?.department_id;
+  const filterTier = options.tier || req.query?.tier || 'all';
+
+  let managerDeptId = null;
+  const userWhere = { status: 'active' };
+
+  if (role === 'employee') {
+    userWhere.id = req.user.id;
+  } else if (role === 'manager') {
+    const manager = await User.findByPk(req.user.id, { attributes: ['department_id'] });
+    managerDeptId = manager?.department_id || null;
+    userWhere.department_id = managerDeptId || -1;
+  } else if (role === 'admin' && filterDeptId) {
+    userWhere.department_id = parseInt(filterDeptId, 10);
+  }
+
+  const users = await User.findAll({
+    where: userWhere,
+    attributes: ['id', 'full_name', 'employee_code', 'department_id', 'position', 'hire_date'],
+    include: [
+      { model: Department, as: 'department', attributes: ['id', 'name', 'code'] },
+      {
+        model: LeaveBalance,
+        as: 'leave_balances',
+        where: { year },
+        required: false
+      }
+    ],
+    order: [['full_name', 'ASC']]
+  });
+
+  let totalEntitledDays = 0;
+  let totalUsedDays = 0;
+  let totalRemainingDays = 0;
+  let totalCarriedOverDays = 0;
+
+  const tiers = {
+    low: { key: 'low', label: 'Dưới 25% (Ít nghỉ phép)', count: 0, percentage: 0 },
+    medium: { key: 'medium', label: '25% - 50% (Tiến độ bình thường)', count: 0, percentage: 0 },
+    high: { key: 'high', label: '50% - 75% (Tiêu thụ khá)', count: 0, percentage: 0 },
+    exhausted: { key: 'exhausted', label: 'Trên 75% (Gần hết phép)', count: 0, percentage: 0 }
+  };
+
+  const processedEmployees = [];
+
+  for (const u of users) {
+    const balRecord = u.leave_balances && u.leave_balances.length > 0 ? u.leave_balances[0] : null;
+    const annualEntitlement = Number(balRecord?.annual_entitlement || 12);
+    const carriedOver = Number(balRecord?.carried_over_days || 0);
+    const totalEntitled = Number((annualEntitlement + carriedOver).toFixed(1));
+    const usedDays = Number(balRecord?.used_days || 0);
+    const remainingDays = Math.max(
+      0,
+      Number(balRecord?.remaining_days ?? totalEntitled - usedDays)
+    );
+    const utilizationRate =
+      totalEntitled > 0 ? Number(((usedDays / totalEntitled) * 100).toFixed(1)) : 0;
+
+    let tierKey = 'low';
+    if (utilizationRate >= 75) {
+      tierKey = 'exhausted';
+    } else if (utilizationRate >= 50) {
+      tierKey = 'high';
+    } else if (utilizationRate >= 25) {
+      tierKey = 'medium';
+    }
+
+    tiers[tierKey].count += 1;
+
+    totalEntitledDays += totalEntitled;
+    totalUsedDays += usedDays;
+    totalRemainingDays += remainingDays;
+    totalCarriedOverDays += carriedOver;
+
+    processedEmployees.push({
+      userId: u.id,
+      fullName: u.full_name,
+      employeeCode: u.employee_code,
+      position: u.position || 'Nhân viên',
+      department: u.department
+        ? { id: u.department.id, code: u.department.code, name: u.department.name }
+        : null,
+      annualEntitlement,
+      carriedOverDays: carriedOver,
+      totalEntitledDays: totalEntitled,
+      usedDays,
+      remainingDays,
+      utilizationRate,
+      tier: tierKey,
+      isNearExhaustion: remainingDays <= 2,
+      isUntouched: usedDays === 0
+    });
+  }
+
+  const totalEmployees = users.length;
+  totalEntitledDays = Number(totalEntitledDays.toFixed(1));
+  totalUsedDays = Number(totalUsedDays.toFixed(1));
+  totalRemainingDays = Number(totalRemainingDays.toFixed(1));
+  totalCarriedOverDays = Number(totalCarriedOverDays.toFixed(1));
+
+  const averageUtilizationRate =
+    totalEntitledDays > 0 ? Number(((totalUsedDays / totalEntitledDays) * 100).toFixed(1)) : 0;
+  const avgRemainingPerWorker =
+    totalEmployees > 0 ? Number((totalRemainingDays / totalEmployees).toFixed(1)) : 0;
+  const avgUsedPerWorker =
+    totalEmployees > 0 ? Number((totalUsedDays / totalEmployees).toFixed(1)) : 0;
+
+  // Cập nhật percentage cho từng tier
+  Object.keys(tiers).forEach((k) => {
+    tiers[k].percentage =
+      totalEmployees > 0 ? Number(((tiers[k].count / totalEmployees) * 100).toFixed(1)) : 0;
+  });
+
+  // Lọc theo tier nếu có
+  const filteredEmployees =
+    filterTier && filterTier !== 'all'
+      ? processedEmployees.filter((e) => e.tier === filterTier)
+      : processedEmployees;
+
+  // Thống kê tổng hợp theo từng phòng ban (cho Admin và Manager)
+  const departmentSummary = [];
+  if (role === 'admin' || role === 'manager') {
+    const departments = await Department.findAll({
+      order: [['code', 'ASC']],
+      attributes: ['id', 'code', 'name']
+    });
+
+    for (const d of departments) {
+      const deptStaff = await User.findAll({
+        where: { department_id: d.id, status: 'active' },
+        attributes: ['id'],
+        include: [
+          {
+            model: LeaveBalance,
+            as: 'leave_balances',
+            where: { year },
+            required: false
+          }
+        ]
+      });
+
+      let dEntitled = 0;
+      let dUsed = 0;
+      let dRemaining = 0;
+      let dCarried = 0;
+
+      for (const s of deptStaff) {
+        const b = s.leave_balances && s.leave_balances.length > 0 ? s.leave_balances[0] : null;
+        const ent = Number(b?.annual_entitlement || 12);
+        const car = Number(b?.carried_over_days || 0);
+        const tot = ent + car;
+        const u = Number(b?.used_days || 0);
+        const rem = Math.max(0, Number(b?.remaining_days ?? tot - u));
+
+        dEntitled += tot;
+        dUsed += u;
+        dRemaining += rem;
+        dCarried += car;
+      }
+
+      dEntitled = Number(dEntitled.toFixed(1));
+      dUsed = Number(dUsed.toFixed(1));
+      dRemaining = Number(dRemaining.toFixed(1));
+      dCarried = Number(dCarried.toFixed(1));
+
+      const dStaffCount = deptStaff.length;
+      const dRate = dEntitled > 0 ? Number(((dUsed / dEntitled) * 100).toFixed(1)) : 0;
+      const dAvgRem = dStaffCount > 0 ? Number((dRemaining / dStaffCount).toFixed(1)) : 0;
+
+      departmentSummary.push({
+        id: d.id,
+        code: d.code,
+        name: d.name,
+        staffCount: dStaffCount,
+        entitledDays: dEntitled,
+        usedDays: dUsed,
+        remainingDays: dRemaining,
+        carriedOverDays: dCarried,
+        utilizationRate: dRate,
+        avgRemainingPerWorker: dAvgRem,
+        isMyDepartment: managerDeptId === d.id
+      });
+    }
+
+    departmentSummary.sort((a, b) => b.utilizationRate - a.utilizationRate);
+  }
+
+  const topUsedDepartment = departmentSummary.length > 0 ? departmentSummary[0] : null;
+  const topRemainingDepartment =
+    departmentSummary.length > 0
+      ? [...departmentSummary].sort((a, b) => b.remainingDays - a.remainingDays)[0]
+      : null;
+
+  return {
+    year,
+    filterTier,
+    totalEmployees,
+    totalEntitledDays,
+    totalUsedDays,
+    totalRemainingDays,
+    totalCarriedOverDays,
+    averageUtilizationRate,
+    avgRemainingPerWorker,
+    avgUsedPerWorker,
+    tiers,
+    departmentSummary,
+    employees: filteredEmployees,
+    insights: {
+      topUsedDepartment: topUsedDepartment
+        ? {
+            code: topUsedDepartment.code,
+            name: topUsedDepartment.name,
+            rate: topUsedDepartment.utilizationRate
+          }
+        : null,
+      topRemainingDepartment: topRemainingDepartment
+        ? {
+            code: topRemainingDepartment.code,
+            name: topRemainingDepartment.name,
+            remainingDays: topRemainingDepartment.remainingDays
+          }
+        : null,
+      exhaustedCount: tiers.exhausted.count,
+      untouchedCount: processedEmployees.filter((e) => e.isUntouched).length
+    }
+  };
+};
+
+/**
+ * GET /api/dashboard/leave-balances
+ * Trả về thống kê số ngày phép đã dùng / còn lại theo năm và các bộ lọc
+ */
+export const getLeaveBalanceStats = async (req, res, next) => {
+  try {
+    const year = parseInt(req.query.year, 10) || new Date().getFullYear();
+    const data = await calculateLeaveBalanceStats(req, year, {
+      department_id: req.query.department_id,
+      tier: req.query.tier
     });
     res.status(200).json({
       success: true,

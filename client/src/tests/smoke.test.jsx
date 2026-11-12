@@ -111,6 +111,39 @@ vi.mock('../api/dashboardApi', () => ({
           })),
           departmentComparison: []
         },
+        leaveBalanceStats: {
+          year: 2026,
+          totalEmployees: 42,
+          totalEntitledDays: 504,
+          totalUsedDays: 120,
+          totalRemainingDays: 384,
+          totalCarriedOverDays: 20,
+          averageUtilizationRate: 23.8,
+          avgRemainingPerWorker: 9.1,
+          avgUsedPerWorker: 2.9,
+          tiers: {
+            low: { key: 'low', label: 'Dưới 25%', count: 25, percentage: 59.5 },
+            medium: { key: 'medium', label: '25% - 50%', count: 12, percentage: 28.6 },
+            high: { key: 'high', label: '50% - 75%', count: 4, percentage: 9.5 },
+            exhausted: { key: 'exhausted', label: 'Trên 75%', count: 1, percentage: 2.4 }
+          },
+          departmentSummary: [],
+          employees: [
+            {
+              userId: 1,
+              fullName: 'Admin User',
+              employeeCode: 'FS-ADM01',
+              position: 'Quản trị viên',
+              annualEntitlement: 14,
+              carriedOverDays: 2,
+              totalEntitledDays: 16,
+              usedDays: 4,
+              remainingDays: 12,
+              utilizationRate: 25.0,
+              tier: 'medium'
+            }
+          ]
+        },
         adminData: {
           accounts: {
             total: 45,
@@ -153,6 +186,23 @@ vi.mock('../api/dashboardApi', () => ({
         rejectionRate: 0,
         monthlyTrend: [],
         departmentComparison: []
+      }
+    }),
+    getLeaveBalances: vi.fn().mockResolvedValue({
+      data: {
+        totalEmployees: 0,
+        totalEntitledDays: 0,
+        totalUsedDays: 0,
+        totalRemainingDays: 0,
+        averageUtilizationRate: 0,
+        tiers: {
+          low: { count: 0, percentage: 0 },
+          medium: { count: 0, percentage: 0 },
+          high: { count: 0, percentage: 0 },
+          exhausted: { count: 0, percentage: 0 }
+        },
+        departmentSummary: [],
+        employees: []
       }
     })
   }

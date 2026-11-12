@@ -3180,6 +3180,226 @@ figure.status-chart,
   color: var(--danger-text);
 }
 
+/* ==========================================================================
+   Leave Balance Used & Remaining Dashboard Widget
+   ========================================================================== */
+.leave-balance-panel {
+  grid-column: 1 / -1;
+}
+
+.personal-balance-card {
+  padding: var(--space-5);
+  background-color: var(--ground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.personal-balance-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.personal-balance-header h3 {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+}
+
+.personal-balance-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  background-color: var(--surface);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+}
+
+.personal-balance-metrics dt {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.personal-balance-metrics dd {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+}
+
+.balance-meter-container {
+  width: 100%;
+}
+
+.balance-meter-bar {
+  width: 100%;
+  height: 12px;
+  border-radius: var(--radius-xs);
+}
+
+.personal-balance-footer {
+  border-top: 1px dashed var(--border);
+  padding-top: var(--space-2);
+}
+
+.balance-tiers-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.tiers-section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tiers-section-header h3 {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+}
+
+.balance-tier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+
+.tier-card {
+  padding: var(--space-4) var(--space-5);
+  background-color: var(--ground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.tier-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.tier-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.tier-title {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tier-desc {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.tier-meter-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+
+.tier-meter {
+  width: 100%;
+  height: 8px;
+}
+
+.tier-pct {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.tier-low {
+  border-left: 4px solid #3B82F6;
+}
+
+.tier-medium {
+  border-left: 4px solid #10B981;
+}
+
+.tier-high {
+  border-left: 4px solid #F59E0B;
+}
+
+.tier-exhausted {
+  border-left: 4px solid #EF4444;
+}
+
+.balance-insights-box {
+  padding: var(--space-4) var(--space-5);
+  background-color: var(--ground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.balance-insights-box header h4 {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.insights-list {
+  list-style: disc;
+  padding-left: var(--space-5);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.insights-list strong {
+  color: var(--text-primary);
+}
+
+.balance-dept-table,
+.balance-employee-table {
+  width: 100%;
+  margin-top: var(--space-3);
+}
+
+.balance-dept-table th,
+.balance-dept-table td,
+.balance-employee-table th,
+.balance-employee-table td {
+  font-size: var(--text-xs);
+  padding: var(--space-2) var(--space-3);
+}
+
+.balance-dept-table tfoot th,
+.balance-dept-table tfoot td,
+.balance-employee-table tfoot th,
+.balance-employee-table tfoot td {
+  font-weight: 700;
+  background-color: var(--raised);
+  border-top: 2px solid var(--border);
+}
+
+
 
 
 

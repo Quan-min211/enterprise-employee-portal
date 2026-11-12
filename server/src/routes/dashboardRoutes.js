@@ -4,7 +4,8 @@ import {
   getDashboardSummary,
   getMonthlyRequests,
   getTopOtDepartments,
-  getApprovalRate
+  getApprovalRate,
+  getLeaveBalanceStats
 } from '../controllers/dashboardController.js';
 import { verifyToken } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validateRequest.js';
@@ -66,6 +67,29 @@ router.get(
   ],
   validateRequest,
   getApprovalRate
+);
+
+router.get(
+  '/leave-balances',
+  verifyToken,
+  [
+    query('year')
+      .optional()
+      .isInt({ min: 2020, max: 2100 })
+      .withMessage('Năm thống kê không hợp lệ (2020 - 2100).'),
+    query('department_id')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('Mã phòng ban không hợp lệ.'),
+    query('tier')
+      .optional()
+      .isIn(['all', 'low', 'medium', 'high', 'exhausted'])
+      .withMessage(
+        'Phân nhóm tiến độ phép không hợp lệ (all, low, medium, high, exhausted).'
+      )
+  ],
+  validateRequest,
+  getLeaveBalanceStats
 );
 
 export default router;

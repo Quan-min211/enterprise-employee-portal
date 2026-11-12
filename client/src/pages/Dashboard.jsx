@@ -228,6 +228,39 @@ export default function Dashboard() {
     }
   };
 
+  // Báo cáo số ngày phép đã dùng / còn lại (Leave Balance Report state)
+  const [balanceStatsYear, setBalanceStatsYear] = useState(new Date().getFullYear());
+  const [balanceTier, setBalanceTier] = useState('all');
+  const [balanceDeptId, setBalanceDeptId] = useState('');
+  const [balanceData, setBalanceData] = useState(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [balanceViewMode, setBalanceViewMode] = useState('overview');
+
+  const handleBalanceFilterChange = async (
+    newYear,
+    newTier = balanceTier,
+    newDeptId = balanceDeptId
+  ) => {
+    setBalanceStatsYear(newYear);
+    setBalanceTier(newTier);
+    setBalanceDeptId(newDeptId);
+    setBalanceLoading(true);
+    try {
+      const params = { year: newYear };
+      if (newTier && newTier !== 'all') params.tier = newTier;
+      if (newDeptId) params.department_id = newDeptId;
+      const res = await dashboardApi.getLeaveBalances(params);
+      if (res?.data) {
+        setBalanceData(res.data);
+      }
+    } catch (err) {
+      console.error('Error loading leave balance stats:', err);
+      pushToast('Không thể tải báo cáo số ngày phép đã dùng/còn lại.', 'error');
+    } finally {
+      setBalanceLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isAdmin) {
       departmentsApi
@@ -301,6 +334,9 @@ export default function Dashboard() {
           }
           if (dashRes.value.summary.approvalStats) {
             setApprovalData(dashRes.value.summary.approvalStats);
+          }
+          if (dashRes.value.summary.leaveBalanceStats) {
+            setBalanceData(dashRes.value.summary.leaveBalanceStats);
           }
         }
         if (balRes.status === 'fulfilled' && balRes.value) {
@@ -1759,6 +1795,530 @@ export default function Dashboard() {
     );
   };
 
+  /* ------------------------------------------------------------------ */
+  /* Báo cáo số ngày phép đã dùng / còn lại (Leave Balance Report Panel)*/
+  /* ------------------------------------------------------------------ */
+  const LeaveBalanceReportPanel = () => {
+    const tierLabels = {
+      all: 'Tất cả tiến độ',
+      low: 'Dưới 25% (Ít nghỉ phép)',
+      medium: '25% - 50% (Tiến độ bình thường)',
+      high: '50% - 75% (Tiêu thụ khá)',
+      exhausted: 'Trên 75% (Gần hết phép)'
+    };
+
+    return (
+      <section className="panel leave-balance-panel" aria-labelledby="leave-balance-heading">
+        <header className="panel-header">
+          <hgroup>
+            <h2 id="leave-balance-heading">
+              {isAdmin
+                ? 'Báo Cáo Tình Hình Sử Dụng & Tồn Phép (Toàn Nhà Máy)'
+                : isPureManager
+                  ? 'Báo Cáo Tình Hình Sử Dụng & Tồn Phép (Phòng Ban)'
+                  : 'Báo Cáo Tình Hình Sử Dụng Phép Năm Của Tôi'}
+            </h2>
+            <p>
+              Theo dõi định mức ngày phép, số ngày đã sử dụng và quỹ phép còn lại năm {balanceStatsYear}
+              {balanceTier !== 'all' ? ` · ${tierLabels[balanceTier] || balanceTier}` : ''}
+            </p>
+          </hgroup>
+          <form className="panel-controls-group" onSubmit={(e) => e.preventDefault()}>
+            <label htmlFor="balance-year-select" className="sr-only">
+              Năm thống kê
+            </label>
+            <select
+              id="balance-year-select"
+              value={balanceStatsYear}
+              onChange={(e) =>
+                handleBalanceFilterChange(Number(e.target.value), balanceTier, balanceDeptId)
+              }
+              aria-label="Chọn năm thống kê ngày phép"
+            >
+              {[2024, 2025, 2026, 2027].map((y) => (
+                <option key={y} value={y}>
+                  Năm {y}
+                </option>
+              ))}
+            </select>
+
+            {/* Phân nhóm tiến độ */}
+            <label htmlFor="balance-tier-select" className="sr-only">
+              Tiến độ tiêu thụ
+            </label>
+            <select
+              id="balance-tier-select"
+              value={balanceTier}
+              onChange={(e) =>
+                handleBalanceFilterChange(balanceStatsYear, e.target.value, balanceDeptId)
+              }
+              aria-label="Lọc theo phân nhóm tiến độ"
+            >
+              <option value="all">Tất cả tiến độ</option>
+              <option value="low">Dưới 25% (Ít nghỉ)</option>
+              <option value="medium">25% - 50% (Bình thường)</option>
+              <option value="high">50% - 75% (Tiêu thụ khá)</option>
+              <option value="exhausted">Trên 75% (Gần hết phép)</option>
+            </select>
+
+            {isAdmin && (
+              <>
+                <label htmlFor="balance-dept-select" className="sr-only">
+                  Phòng ban
+                </label>
+                <select
+                  id="balance-dept-select"
+                  value={balanceDeptId}
+                  onChange={(e) =>
+                    handleBalanceFilterChange(balanceStatsYear, balanceTier, e.target.value)
+                  }
+                  aria-label="Lọc theo phòng ban"
+                >
+                  <option value="">Toàn bộ nhà máy</option>
+                  {departmentsList.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      [{d.code}] {d.name}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+
+            <menu className="action-row" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              <li>
+                <button
+                  type="button"
+                  className={`btn compact-button ${balanceViewMode === 'overview' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setBalanceViewMode('overview')}
+                >
+                  Tổng quan
+                </button>
+              </li>
+              {(isAdmin || isPureManager) && (
+                <li>
+                  <button
+                    type="button"
+                    className={`btn compact-button ${balanceViewMode === 'departments' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setBalanceViewMode('departments')}
+                  >
+                    Phòng ban
+                  </button>
+                </li>
+              )}
+              <li>
+                <button
+                  type="button"
+                  className={`btn compact-button ${balanceViewMode === 'table' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setBalanceViewMode('table')}
+                >
+                  {isEmployee ? 'Chi tiết của tôi' : 'Chi tiết nhân sự'}
+                </button>
+              </li>
+            </menu>
+          </form>
+        </header>
+
+        {/* Top Badges */}
+        <section
+          className="monthly-summary-badges"
+          aria-label={`Tóm tắt chỉ số số dư phép năm ${balanceStatsYear}`}
+        >
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Tổng quỹ phép</strong>
+            <data value={balanceData?.totalEntitledDays ?? 0} className="monthly-badge-value">
+              {balanceData?.totalEntitledDays ?? 0} <small>ngày</small>
+            </data>
+            <small className="muted">
+              {balanceData?.totalEmployees || 0} nhân sự · TB {balanceData?.avgRemainingPerWorker ?? 0} ngày tồn/người
+            </small>
+          </article>
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Ngày phép đã dùng</strong>
+            <data value={balanceData?.totalUsedDays ?? 0} className="monthly-badge-value text-warning">
+              {balanceData?.totalUsedDays ?? 0} <small>ngày</small>
+            </data>
+            <small className="muted">
+              Đã tiêu thụ {balanceData?.averageUtilizationRate ?? 0}% quỹ phép năm
+            </small>
+          </article>
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Ngày phép còn lại</strong>
+            <data value={balanceData?.totalRemainingDays ?? 0} className="monthly-badge-value text-success">
+              {balanceData?.totalRemainingDays ?? 0} <small>ngày</small>
+            </data>
+            <small className="muted">
+              Còn lại {balanceData?.totalEntitledDays > 0 ? (100 - (balanceData?.averageUtilizationRate || 0)).toFixed(1) : 0}% quỹ phép
+            </small>
+          </article>
+          <article className="monthly-badge-item">
+            <strong className="monthly-badge-label">Chuyển tiếp từ năm trước</strong>
+            <data value={balanceData?.totalCarriedOverDays ?? 0} className="monthly-badge-value">
+              {balanceData?.totalCarriedOverDays ?? 0} <small>ngày</small>
+            </data>
+            <small className="muted">Cộng dồn vào quỹ phép khả dụng</small>
+          </article>
+        </section>
+
+        {balanceLoading ? (
+          <SkeletonCards count={3} />
+        ) : !balanceData || balanceData.totalEmployees === 0 ? (
+          <figure className="empty-state" role="status">
+            <figcaption>
+              <strong className="empty-title">Chưa có dữ liệu ngày phép</strong>
+              <p className="muted">
+                Không tìm thấy dữ liệu ngày phép phù hợp với bộ lọc trong năm {balanceStatsYear}.
+              </p>
+            </figcaption>
+          </figure>
+        ) : balanceViewMode === 'overview' ? (
+          <section className="balance-overview-view" aria-label="Tổng quan tiến độ sử dụng phép">
+            {/* Nếu là nhân viên thường: Hiển thị Thẻ phân tích cá nhân */}
+            {isEmployee && balanceData.employees && balanceData.employees.length > 0 && (
+              <article className="personal-balance-card">
+                <header className="personal-balance-header">
+                  <h3>🎯 Tiến Độ Nghỉ Phép Cá Nhân Năm {balanceStatsYear}</h3>
+                  <mark
+                    className={`badge ${
+                      balanceData.employees[0].utilizationRate >= 75
+                        ? 'badge-danger'
+                        : balanceData.employees[0].utilizationRate >= 50
+                          ? 'badge-warning'
+                          : 'badge-normal'
+                    }`}
+                  >
+                    Đã dùng {balanceData.employees[0].utilizationRate}%
+                  </mark>
+                </header>
+                <dl className="personal-balance-metrics">
+                  <dt>Định mức năm:</dt>
+                  <dd>
+                    <strong>{balanceData.employees[0].annualEntitlement}</strong> ngày
+                  </dd>
+                  <dt>Chuyển từ năm trước:</dt>
+                  <dd>
+                    <strong>{balanceData.employees[0].carriedOverDays}</strong> ngày
+                  </dd>
+                  <dt>Tổng quỹ phép khả dụng:</dt>
+                  <dd>
+                    <strong>{balanceData.employees[0].totalEntitledDays}</strong> ngày
+                  </dd>
+                  <dt>Đã sử dụng:</dt>
+                  <dd className="text-warning">
+                    <strong>{balanceData.employees[0].usedDays}</strong> ngày
+                  </dd>
+                  <dt>Còn lại:</dt>
+                  <dd className="text-success">
+                    <strong>{balanceData.employees[0].remainingDays}</strong> ngày
+                  </dd>
+                </dl>
+                <figure className="balance-meter-container">
+                  <meter
+                    min="0"
+                    max={balanceData.employees[0].totalEntitledDays || 12}
+                    value={balanceData.employees[0].usedDays}
+                    className="balance-meter-bar"
+                    aria-label={`Tiến độ dùng phép: ${balanceData.employees[0].usedDays} / ${balanceData.employees[0].totalEntitledDays} ngày`}
+                  >
+                    {balanceData.employees[0].utilizationRate}%
+                  </meter>
+                </figure>
+                <footer className="personal-balance-footer">
+                  <small className="muted">
+                    💡 Quy định Fu Sheng: Người lao động được phép chuyển tối đa 5 ngày phép chưa sử dụng sang năm tiếp theo trước ngày 31/03.
+                  </small>
+                </footer>
+              </article>
+            )}
+
+            {/* Phân nhóm tiến độ sử dụng phép (Tiers Grid) - Dành cho Admin/Manager */}
+            {(isAdmin || isPureManager) && balanceData.tiers && (
+              <section className="balance-tiers-section" aria-label="Phân bổ tiến độ sử dụng phép của nhân viên">
+                <header className="tiers-section-header">
+                  <h3>📊 Phân Bổ Nhân Lực Theo Mức Tiêu Thụ Phép Năm {balanceStatsYear}</h3>
+                  <small className="muted">Giúp quản đốc và HR phát hiện nguy cơ dồn phép cuối năm hoặc kiệt sức lao động</small>
+                </header>
+                <section className="balance-tier-grid">
+                  <article className="tier-card tier-low">
+                    <header className="tier-card-header">
+                      <h4 className="tier-title">Ít nghỉ phép (&lt; 25%)</h4>
+                      <mark className="badge badge-normal">{balanceData.tiers.low.count} người</mark>
+                    </header>
+                    <p className="tier-desc">Còn tồn hầu hết ngày phép trong năm. Cần nhắc nhở sắp xếp lịch nghỉ hợp lý.</p>
+                    <figure className="tier-meter-wrapper">
+                      <meter
+                        min="0"
+                        max="100"
+                        value={balanceData.tiers.low.percentage}
+                        className="tier-meter"
+                        aria-label={`Tỷ lệ nhóm ít nghỉ: ${balanceData.tiers.low.percentage}%`}
+                      >
+                        {balanceData.tiers.low.percentage}%
+                      </meter>
+                      <data value={balanceData.tiers.low.percentage} className="tier-pct">
+                        {balanceData.tiers.low.percentage}% nhân lực
+                      </data>
+                    </figure>
+                  </article>
+
+                  <article className="tier-card tier-medium">
+                    <header className="tier-card-header">
+                      <h4 className="tier-title">Bình thường (25% - 50%)</h4>
+                      <mark className="badge badge-info">{balanceData.tiers.medium.count} người</mark>
+                    </header>
+                    <p className="tier-desc">Tiến độ tiêu thụ ngày phép cân đối và ổn định theo kế hoạch quý.</p>
+                    <figure className="tier-meter-wrapper">
+                      <meter
+                        min="0"
+                        max="100"
+                        value={balanceData.tiers.medium.percentage}
+                        className="tier-meter"
+                        aria-label={`Tỷ lệ nhóm bình thường: ${balanceData.tiers.medium.percentage}%`}
+                      >
+                        {balanceData.tiers.medium.percentage}%
+                      </meter>
+                      <data value={balanceData.tiers.medium.percentage} className="tier-pct">
+                        {balanceData.tiers.medium.percentage}% nhân lực
+                      </data>
+                    </figure>
+                  </article>
+
+                  <article className="tier-card tier-high">
+                    <header className="tier-card-header">
+                      <h4 className="tier-title">Tiêu thụ khá (50% - 75%)</h4>
+                      <mark className="badge badge-warning">{balanceData.tiers.high.count} người</mark>
+                    </header>
+                    <p className="tier-desc">Đã dùng hơn một nửa định mức phép năm, chủ yếu nghỉ việc riêng gia đình.</p>
+                    <figure className="tier-meter-wrapper">
+                      <meter
+                        min="0"
+                        max="100"
+                        value={balanceData.tiers.high.percentage}
+                        className="tier-meter"
+                        aria-label={`Tỷ lệ nhóm dùng khá: ${balanceData.tiers.high.percentage}%`}
+                      >
+                        {balanceData.tiers.high.percentage}%
+                      </meter>
+                      <data value={balanceData.tiers.high.percentage} className="tier-pct">
+                        {balanceData.tiers.high.percentage}% nhân lực
+                      </data>
+                    </figure>
+                  </article>
+
+                  <article className="tier-card tier-exhausted">
+                    <header className="tier-card-header">
+                      <h4 className="tier-title">Gần hết phép (&gt; 75%)</h4>
+                      <mark className="badge badge-danger">{balanceData.tiers.exhausted.count} người</mark>
+                    </header>
+                    <p className="tier-desc">Chỉ còn ≤ 2-3 ngày phép khả dụng. Nếu nghỉ thêm sẽ phải xét nghỉ không hưởng lương.</p>
+                    <figure className="tier-meter-wrapper">
+                      <meter
+                        min="0"
+                        max="100"
+                        value={balanceData.tiers.exhausted.percentage}
+                        className="tier-meter"
+                        aria-label={`Tỷ lệ nhóm gần hết phép: ${balanceData.tiers.exhausted.percentage}%`}
+                      >
+                        {balanceData.tiers.exhausted.percentage}%
+                      </meter>
+                      <data value={balanceData.tiers.exhausted.percentage} className="tier-pct">
+                        {balanceData.tiers.exhausted.percentage}% nhân lực
+                      </data>
+                    </figure>
+                  </article>
+                </section>
+
+                {/* Quản trị Insights */}
+                {balanceData.insights && (
+                  <section className="balance-insights-box" aria-label="Ghi chú quản trị nhân sự">
+                    <header>
+                      <h4>📌 Nhận Định Quản Trị Nhân Lực</h4>
+                    </header>
+                    <ul className="insights-list">
+                      {balanceData.insights.topUsedDepartment && (
+                        <li>
+                          Bộ phận sử dụng phép tích cực nhất:{' '}
+                          <strong>
+                            [{balanceData.insights.topUsedDepartment.code}]{' '}
+                            {balanceData.insights.topUsedDepartment.name}
+                          </strong>{' '}
+                          (đã tiêu thụ {balanceData.insights.topUsedDepartment.rate}% quỹ phép).
+                        </li>
+                      )}
+                      {balanceData.insights.topRemainingDepartment && (
+                        <li>
+                          Bộ phận còn tồn nhiều ngày phép nhất:{' '}
+                          <strong>
+                            [{balanceData.insights.topRemainingDepartment.code}]{' '}
+                            {balanceData.insights.topRemainingDepartment.name}
+                          </strong>{' '}
+                          (còn tồn tổng cộng {balanceData.insights.topRemainingDepartment.remainingDays} ngày phép).
+                        </li>
+                      )}
+                      <li>
+                        Có <strong>{balanceData.insights.untouchedCount}</strong> nhân sự chưa sử dụng ngày phép nào và{' '}
+                        <strong>{balanceData.insights.exhaustedCount}</strong> nhân sự sắp hết quỹ phép năm {balanceStatsYear}.
+                      </li>
+                    </ul>
+                  </section>
+                )}
+              </section>
+            )}
+          </section>
+        ) : balanceViewMode === 'departments' && balanceData.departmentSummary ? (
+          <section
+            className="table-shell"
+            aria-label={`Bảng so sánh số dư phép giữa các phòng ban năm ${balanceStatsYear}`}
+          >
+            <table className="responsive-table balance-dept-table">
+              <caption>
+                So sánh số ngày phép đã sử dụng và còn tồn theo từng bộ phận năm {balanceStatsYear}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Mã PB</th>
+                  <th scope="col">Phòng ban</th>
+                  <th scope="col">Nhân sự</th>
+                  <th scope="col">Tổng quỹ phép</th>
+                  <th scope="col">Đã sử dụng</th>
+                  <th scope="col">Còn lại</th>
+                  <th scope="col">TB tồn/người</th>
+                  <th scope="col">Tỷ lệ sử dụng</th>
+                </tr>
+              </thead>
+              <tbody>
+                {balanceData.departmentSummary.map((d) => (
+                  <tr key={d.id} className={d.isMyDepartment ? 'highlight-row' : ''}>
+                    <th scope="row">
+                      <code>{d.code}</code>
+                      {d.isMyDepartment && (
+                        <mark className="badge badge-info" style={{ marginLeft: 'var(--space-2)' }}>
+                          Của bạn
+                        </mark>
+                      )}
+                    </th>
+                    <td>{d.name}</td>
+                    <td>{d.staffCount} người</td>
+                    <td>
+                      <strong>{d.entitledDays}</strong> ngày
+                    </td>
+                    <td className="text-warning">
+                      <strong>{d.usedDays}</strong> ngày
+                    </td>
+                    <td className="text-success">
+                      <strong>{d.remainingDays}</strong> ngày
+                    </td>
+                    <td>{d.avgRemainingPerWorker} ngày</td>
+                    <td>
+                      <data
+                        value={d.utilizationRate}
+                        className={`rate-badge ${
+                          d.utilizationRate >= 75
+                            ? 'danger'
+                            : d.utilizationRate >= 25
+                              ? 'success'
+                              : ''
+                        }`}
+                      >
+                        {d.utilizationRate}%
+                      </data>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        ) : (
+          <section
+            className="table-shell"
+            aria-label={`Danh sách chi tiết số dư phép nhân viên năm ${balanceStatsYear}`}
+          >
+            <table className="responsive-table balance-employee-table">
+              <caption>
+                Danh sách chi tiết số ngày phép năm, chuyển tiếp, đã dùng và còn lại của nhân sự năm {balanceStatsYear}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Mã NV</th>
+                  <th scope="col">Họ và tên</th>
+                  <th scope="col">Phòng ban</th>
+                  <th scope="col">Định mức</th>
+                  <th scope="col">Chuyển tiếp</th>
+                  <th scope="col">Đã dùng</th>
+                  <th scope="col">Còn lại</th>
+                  <th scope="col">Tiến độ tiêu thụ</th>
+                  <th scope="col">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                {balanceData.employees.map((e) => (
+                  <tr key={e.userId}>
+                    <th scope="row">
+                      <code>{e.employeeCode}</code>
+                    </th>
+                    <td>
+                      <strong>{e.fullName}</strong>
+                      <br />
+                      <small className="muted">{e.position}</small>
+                    </td>
+                    <td>{e.department?.name || 'Chưa phân bổ'}</td>
+                    <td>{e.annualEntitlement}</td>
+                    <td>{e.carriedOverDays > 0 ? `+${e.carriedOverDays}` : '0'}</td>
+                    <td className="text-warning">
+                      <strong>{e.usedDays}</strong>
+                    </td>
+                    <td className="text-success">
+                      <strong>{e.remainingDays}</strong>
+                    </td>
+                    <td>
+                      <data value={e.utilizationRate} className="rate-badge">
+                        {e.utilizationRate}%
+                      </data>
+                    </td>
+                    <td>
+                      {e.isNearExhaustion ? (
+                        <mark className="badge badge-danger">Sắp hết phép</mark>
+                      ) : e.isUntouched ? (
+                        <mark className="badge badge-normal">Chưa nghỉ phép</mark>
+                      ) : e.tier === 'high' ? (
+                        <mark className="badge badge-warning">Đã dùng &gt; 50%</mark>
+                      ) : (
+                        <mark className="badge badge-success">Bình thường</mark>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row" colSpan={3}>
+                    Tổng hợp ({balanceData.employees.length} nhân sự)
+                  </th>
+                  <td>
+                    <strong>{balanceData.totalEntitledDays} ngày</strong>
+                  </td>
+                  <td>
+                    <strong>+{balanceData.totalCarriedOverDays} ngày</strong>
+                  </td>
+                  <td className="text-warning">
+                    <strong>{balanceData.totalUsedDays} ngày</strong>
+                  </td>
+                  <td className="text-success">
+                    <strong>{balanceData.totalRemainingDays} ngày</strong>
+                  </td>
+                  <td colSpan={2}>
+                    <strong className="text-success">
+                      Trung bình đã dùng {balanceData.averageUtilizationRate}%
+                    </strong>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </section>
+        )}
+      </section>
+    );
+  };
+
   /* ================================================================== */
 
   return (
@@ -2097,6 +2657,9 @@ export default function Dashboard() {
 
         {/* Báo Cáo Tỷ Lệ Duyệt / Từ Chối */}
         <ApprovalRateReportPanel />
+
+        {/* Báo Cáo Số Ngày Phép Đã Dùng / Còn Lại */}
+        <LeaveBalanceReportPanel />
 
         {/* Status Chart */}
         <section className="panel" aria-labelledby="leave-chart-heading">
