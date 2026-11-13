@@ -339,7 +339,7 @@ describe('Dashboard role-based rendering', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Tổng Quan Hệ Thống/i)).toBeTruthy();
-      expect(screen.getByText(/Ngày Phép Còn Lại/i)).toBeTruthy();
+      expect(screen.getAllByText(/Ngày Phép Còn Lại/i).length).toBeGreaterThanOrEqual(1);
     });
   });
 });

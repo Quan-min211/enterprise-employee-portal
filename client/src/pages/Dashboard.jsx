@@ -1942,7 +1942,7 @@ export default function Dashboard() {
             </small>
           </article>
           <article className="monthly-badge-item">
-            <strong className="monthly-badge-label">Ngày phép còn lại</strong>
+            <strong className="monthly-badge-label">Quỹ phép còn tồn</strong>
             <data value={balanceData?.totalRemainingDays ?? 0} className="monthly-badge-value text-success">
               {balanceData?.totalRemainingDays ?? 0} <small>ngày</small>
             </data>
