@@ -7,7 +7,7 @@ const DEFAULT_ANNUAL_DAYS = 12;
  * Đảm bảo bản ghi leave_balance tồn tại cho user + năm.
  * Tạo mới với entitlement mặc định nếu chưa có.
  */
-const ensureBalance = async (userId, year) => {
+export const ensureBalance = async (userId, year, options = {}) => {
   const [balance] = await LeaveBalance.findOrCreate({
     where: { user_id: userId, year },
     defaults: {
@@ -15,7 +15,8 @@ const ensureBalance = async (userId, year) => {
       used_days: 0,
       remaining_days: DEFAULT_ANNUAL_DAYS,
       carried_over_days: 0
-    }
+    },
+    ...options
   });
   return balance;
 };

@@ -1,5 +1,7 @@
 import { Op } from 'sequelize';
-import { Department, Holiday, LeaveApprovalLog, LeaveRequest, User } from '../models/index.js';
+import { sequelize } from '../config/database.js';
+import { Department, Holiday, LeaveApprovalLog, LeaveBalance, LeaveRequest, User } from '../models/index.js';
+import { ensureBalance } from './leaveBalanceController.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 
 const csvHeaders = [
@@ -144,10 +146,31 @@ export const createLeaveRequest = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Khoang thoi gian dang ky khong hop le hoac trung ngay le.' });
     }
 
+    const effectiveLeaveType = request_type === 'overtime' ? 'overtime' : (leave_type || 'annual');
+
+    // Kiểm tra số dư phép nếu là nghỉ phép năm
+    if (request_type === 'leave' && effectiveLeaveType === 'annual') {
+      const requestYear = parseInt(String(start_date).slice(0, 4), 10) || new Date(start_date).getFullYear();
+      const balance = await ensureBalance(req.user.id, requestYear);
+
+      if (Number(balance.remaining_days) < dayCount) {
+        return res.status(400).json({
+          success: false,
+          message: `Số ngày phép yêu cầu (${dayCount} ngày) vượt quá số ngày phép còn lại (${Number(balance.remaining_days)} ngày).`,
+          balance: {
+            year: balance.year,
+            annual_entitlement: Number(balance.annual_entitlement),
+            used_days: Number(balance.used_days),
+            remaining_days: Number(balance.remaining_days)
+          }
+        });
+      }
+    }
+
     const request = await LeaveRequest.create({
       user_id: req.user.id,
       request_type,
-      leave_type: request_type === 'overtime' ? 'overtime' : (leave_type || 'annual'),
+      leave_type: effectiveLeaveType,
       start_date,
       end_date,
       reason,
@@ -270,18 +293,52 @@ export const updateLeaveStatus = async (req, res, next) => {
     }
 
     const fromStatus = request.status;
-    request.status = status;
-    request.approver_id = req.user.id;
-    request.manager_comment = manager_comment || null;
-    await request.save();
+    let updatedBalance = null;
 
-    // Ghi lịch sử duyệt
-    await LeaveApprovalLog.create({
-      leave_request_id: request.id,
-      actor_id: req.user.id,
-      from_status: fromStatus,
-      to_status: status,
-      comment: manager_comment || null
+    await sequelize.transaction(async (t) => {
+      // Khi duyệt đơn nghỉ phép năm: tự động trừ số ngày phép trong LeaveBalance
+      if (status === 'approved' && request.request_type === 'leave' && request.leave_type === 'annual') {
+        const requestYear = parseInt(String(request.start_date).slice(0, 4), 10) || new Date(request.start_date).getFullYear();
+        let balance = await LeaveBalance.findOne({
+          where: { user_id: request.user_id, year: requestYear },
+          transaction: t,
+          lock: t.LOCK.UPDATE
+        });
+
+        if (!balance) {
+          balance = await LeaveBalance.create({
+            user_id: request.user_id,
+            year: requestYear,
+            annual_entitlement: 12,
+            used_days: 0,
+            remaining_days: 12,
+            carried_over_days: 0
+          }, { transaction: t });
+        }
+
+        const days = Number(request.day_count) || 0;
+        const currentUsed = Number(balance.used_days) || 0;
+        const currentRemaining = Number(balance.remaining_days) || 0;
+
+        balance.used_days = Number((currentUsed + days).toFixed(2));
+        balance.remaining_days = Math.max(0, Number((currentRemaining - days).toFixed(2)));
+        await balance.save({ transaction: t });
+        updatedBalance = balance;
+      }
+
+      request.status = status;
+      request.approver_id = req.user.id;
+      request.manager_comment = manager_comment || null;
+      await request.save({ transaction: t });
+
+      // Ghi lịch sử duyệt
+      await LeaveApprovalLog.create({
+        leave_request_id: request.id,
+        actor_id: req.user.id,
+        from_status: fromStatus,
+        to_status: status,
+        comment: manager_comment || null
+      }, { transaction: t });
     });
 
     await writeAuditLog({
@@ -290,13 +347,21 @@ export const updateLeaveStatus = async (req, res, next) => {
       action: `leave.${status}`,
       entityType: 'leave_request',
       entityId: request.id,
-      details: { manager_comment: request.manager_comment }
+      details: {
+        manager_comment: request.manager_comment,
+        balance_updated: updatedBalance ? {
+          year: updatedBalance.year,
+          used_days: Number(updatedBalance.used_days),
+          remaining_days: Number(updatedBalance.remaining_days)
+        } : null
+      }
     });
 
     res.status(200).json({
       success: true,
       message: status === 'approved' ? 'Da duyet don thanh cong.' : 'Da tu choi don thanh cong.',
-      request
+      request,
+      ...(updatedBalance ? { balance: updatedBalance } : {})
     });
   } catch (error) {
     next(error);
@@ -325,15 +390,18 @@ export const cancelLeaveRequest = async (req, res, next) => {
     }
 
     const fromStatus = request.status;
-    request.status = 'cancelled';
-    await request.save();
 
-    await LeaveApprovalLog.create({
-      leave_request_id: request.id,
-      actor_id: req.user.id,
-      from_status: fromStatus,
-      to_status: 'cancelled',
-      comment: 'Nguoi nop don tu huy.'
+    await sequelize.transaction(async (t) => {
+      request.status = 'cancelled';
+      await request.save({ transaction: t });
+
+      await LeaveApprovalLog.create({
+        leave_request_id: request.id,
+        actor_id: req.user.id,
+        from_status: fromStatus,
+        to_status: 'cancelled',
+        comment: 'Nguoi nop don tu huy.'
+      }, { transaction: t });
     });
 
     await writeAuditLog({
