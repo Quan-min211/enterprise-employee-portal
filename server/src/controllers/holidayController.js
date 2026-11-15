@@ -39,8 +39,9 @@ export const getHolidays = async (req, res, next) => {
 export const createHoliday = async (req, res, next) => {
   try {
     const { date, name, type } = req.body;
+    const normalizedDate = date instanceof Date ? date.toISOString().slice(0, 10) : String(date);
 
-    const existing = await Holiday.findOne({ where: { date }, paranoid: false });
+    const existing = await Holiday.findOne({ where: { date: normalizedDate }, paranoid: false });
     if (existing) {
       if (existing.deleted_at) {
         await existing.restore();
@@ -51,18 +52,18 @@ export const createHoliday = async (req, res, next) => {
           action: 'holiday.restore',
           entityType: 'holiday',
           entityId: existing.id,
-          details: { date, name, type }
+          details: { date: normalizedDate, name, type }
         });
         return res.status(200).json({ success: true, message: 'Khoi phuc ngay le thanh cong.', holiday: existing });
       }
 
       return res.status(409).json({
         success: false,
-        message: `Ngay ${date} da ton tai trong danh sach ngay le.`
+        message: `Ngay ${normalizedDate} da ton tai trong danh sach ngay le.`
       });
     }
 
-    const holiday = await Holiday.create({ date, name, type: type || 'national' });
+    const holiday = await Holiday.create({ date: normalizedDate, name, type: type || 'national' });
 
     await writeAuditLog({
       req,
@@ -70,7 +71,7 @@ export const createHoliday = async (req, res, next) => {
       action: 'holiday.create',
       entityType: 'holiday',
       entityId: holiday.id,
-      details: { date, name, type }
+      details: { date: normalizedDate, name, type }
     });
 
     res.status(201).json({ success: true, message: 'Tao ngay le thanh cong.', holiday });
