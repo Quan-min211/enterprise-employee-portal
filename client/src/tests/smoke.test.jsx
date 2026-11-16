@@ -210,7 +210,8 @@ vi.mock('../api/dashboardApi', () => ({
 
 vi.mock('../api/leavesApi', () => ({
   leavesApi: {
-    list: vi.fn().mockResolvedValue({ requests: [], total: 0, totalPages: 1, page: 1 })
+    list: vi.fn().mockResolvedValue({ requests: [], total: 0, totalPages: 1, page: 1 }),
+    getLogs: vi.fn().mockResolvedValue({ logs: [], total: 0, leave_request_id: 1 })
   },
   leaveBalancesApi: {
     getMyBalance: vi.fn().mockResolvedValue({ balance: { remaining_days: 12, annual_entitlement: 14, used_days: 2 } })

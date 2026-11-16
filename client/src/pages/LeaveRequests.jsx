@@ -6,7 +6,8 @@ import {
   RotateCcw,
   Check,
   X,
-  Ban
+  Ban,
+  History
 } from 'lucide-react';
 import { departmentsApi } from '../api/departmentsApi';
 import { employeesApi } from '../api/employeesApi';
@@ -56,6 +57,7 @@ export default function LeaveRequests() {
   const { pushToast } = useToast();
   const createDialogRef = useRef(null);
   const actionDialogRef = useRef(null);
+  const logDialogRef = useRef(null);
 
   const [requests, setRequests] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -67,6 +69,9 @@ export default function LeaveRequests() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [actionTarget, setActionTarget] = useState(null);
   const [managerComment, setManagerComment] = useState('');
+  const [selectedLogRequest, setSelectedLogRequest] = useState(null);
+  const [logs, setLogs] = useState([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ total: 0, totalPages: 1 });
   const [formData, setFormData] = useState(emptyFormData);
@@ -95,6 +100,27 @@ export default function LeaveRequests() {
       setManagerComment('');
     });
   }, [actionTarget]);
+
+  useEffect(() => {
+    syncDialog(logDialogRef, Boolean(selectedLogRequest), () => {
+      setSelectedLogRequest(null);
+      setLogs([]);
+    });
+  }, [selectedLogRequest]);
+
+  const handleViewLogs = async (request) => {
+    setSelectedLogRequest(request);
+    setLoadingLogs(true);
+    setLogs([]);
+    try {
+      const res = await leavesApi.getLogs(request.id);
+      setLogs(res.logs || []);
+    } catch (err) {
+      pushToast({ type: 'error', message: err.message || 'Không thể tải lịch sử đơn.' });
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
 
   const fetchRequests = async (activeFilters = filters, nextPage = page) => {
     setLoading(true);
@@ -438,7 +464,7 @@ export default function LeaveRequests() {
                 <th scope="col">Số ngày</th>
                 <th scope="col">Lý do</th>
                 <th scope="col">Trạng thái</th>
-                {isManager && <th scope="col">Thao tác</th>}
+                <th scope="col">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -491,10 +517,21 @@ export default function LeaveRequests() {
                       {statusLabels[request.status] || request.status}
                     </mark>
                   </td>
-                  {isManager && (
-                    <td data-label="Thao tác">
-                      {request.status === 'pending' ? (
-                        <div className="action-row">
+                  <td data-label="Thao tác">
+                    <div className="action-row">
+                      <button
+                        type="button"
+                        onClick={() => handleViewLogs(request)}
+                        className="btn btn-secondary compact-button"
+                        aria-label={`Xem lịch sử xử lý đơn số ${request.id}`}
+                        title="Xem tiến trình phê duyệt"
+                      >
+                        <History size={14} aria-hidden="true" />
+                        Lịch sử
+                      </button>
+
+                      {isManager && request.status === 'pending' && (
+                        <>
                           <button
                             type="button"
                             onClick={() => setActionTarget({ ...request, status: 'approved' })}
@@ -513,28 +550,22 @@ export default function LeaveRequests() {
                             <X size={14} aria-hidden="true" />
                             Từ chối
                           </button>
-                        </div>
-                      ) : (
-                        <small className="muted">
-                          {request.approver?.full_name ? `Bởi ${request.approver.full_name}` : 'Đã xử lý'}
-                        </small>
+                        </>
                       )}
-                    </td>
-                  )}
-                  {/* Nút hủy cho nhân viên với đơn pending của chính mình */}
-                  {!isManager && request.user_id === user?.id && request.status === 'pending' && (
-                    <td data-label="Thao tác">
-                      <button
-                        type="button"
-                        onClick={() => handleCancel(request.id)}
-                        className="btn btn-secondary compact-button danger-text"
-                        aria-label={`Hủy đơn số ${request.id}`}
-                      >
-                        <Ban size={14} aria-hidden="true" />
-                        Hủy đơn
-                      </button>
-                    </td>
-                  )}
+
+                      {!isManager && request.user_id === user?.id && request.status === 'pending' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCancel(request.id)}
+                          className="btn btn-secondary compact-button danger-text"
+                          aria-label={`Hủy đơn số ${request.id}`}
+                        >
+                          <Ban size={14} aria-hidden="true" />
+                          Hủy đơn
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -689,6 +720,71 @@ export default function LeaveRequests() {
             onClick={handleAction}
           >
             {actionTarget?.status === 'approved' ? 'Xác nhận duyệt' : 'Xác nhận từ chối'}
+          </button>
+        </footer>
+      </dialog>
+
+      {/* Dialog xem lịch sử phê duyệt */}
+      <dialog ref={logDialogRef} className="dialog" aria-labelledby="log-dialog-title">
+        <header className="dialog-header">
+          <hgroup>
+            <h2 id="log-dialog-title">
+              Lịch Sử Xử Lý Đơn #{selectedLogRequest?.id}
+            </h2>
+            <p>
+              Người nộp: <strong>{selectedLogRequest?.applicant?.full_name || 'N/A'}</strong> &bull; Loại:{' '}
+              <strong>{selectedLogRequest?.request_type === 'overtime' ? 'Tăng ca' : (leaveLabels[selectedLogRequest?.leave_type] || 'Nghỉ phép')}</strong>
+            </p>
+          </hgroup>
+        </header>
+
+        {loadingLogs ? (
+          <p aria-busy="true" className="muted" style={{ padding: 'var(--space-4) 0' }}>
+            Đang tải lịch sử xử lý đơn...
+          </p>
+        ) : logs.length === 0 ? (
+          <p className="muted" style={{ padding: 'var(--space-4) 0' }}>
+            Chưa có lịch sử thay đổi trạng thái (đơn vừa được gửi và đang ở trạng thái chờ duyệt).
+          </p>
+        ) : (
+          <ol className="approval-log-timeline" aria-label="Tiến trình xử lý đơn">
+            {logs.map((log) => (
+              <li key={log.id} className="approval-log-item">
+                <header className="log-item-header">
+                  <strong>
+                    {statusLabels[log.from_status] || log.from_status} &rarr;{' '}
+                    <mark className={`badge badge-${log.to_status}`}>
+                      {statusLabels[log.to_status] || log.to_status}
+                    </mark>
+                  </strong>
+                  <time dateTime={log.created_at} className="muted">
+                    {new Date(log.created_at).toLocaleString('vi-VN')}
+                  </time>
+                </header>
+                <p className="log-item-actor">
+                  Người thực hiện:{' '}
+                  <strong>{log.actor?.full_name || 'Hệ thống'}</strong>
+                  {log.actor?.employee_code && (
+                    <small className="muted"> ({log.actor.employee_code} &bull; {log.actor.role})</small>
+                  )}
+                </p>
+                {log.comment && (
+                  <blockquote className="log-item-comment">
+                    <cite>Ghi chú:</cite> {log.comment}
+                  </blockquote>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
+
+        <footer className="action-row">
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setSelectedLogRequest(null)}
+          >
+            Đóng
           </button>
         </footer>
       </dialog>

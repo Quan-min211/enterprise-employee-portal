@@ -464,3 +464,62 @@ export const getLeaveStats = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Lấy lịch sử phê duyệt / xử lý của một đơn xin nghỉ phép/OT (LeaveApprovalLogs).
+ * Phân quyền:
+ * - Employee: chỉ xem đơn của chính mình.
+ * - Manager: chỉ xem đơn của nhân viên thuộc phòng ban mình phụ trách.
+ * - Admin: xem được tất cả đơn.
+ */
+export const getLeaveApprovalLogs = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const request = await LeaveRequest.findByPk(id, {
+      include: [
+        {
+          model: User,
+          as: 'applicant',
+          attributes: ['id', 'department_id', 'full_name', 'employee_code']
+        }
+      ]
+    });
+
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Khong tim thay don.' });
+    }
+
+    if (req.user.role === 'employee' && request.user_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Ban khong co quyen xem lich su don cua nguoi khac.' });
+    }
+
+    if (req.user.role === 'manager') {
+      const managedDeptId = await getManagedDepartmentId(req);
+      if (!managedDeptId || request.applicant?.department_id !== managedDeptId) {
+        return res.status(403).json({ success: false, message: 'Ban khong co quyen xem lich su don cua phong ban khac.' });
+      }
+    }
+
+    const logs = await LeaveApprovalLog.findAll({
+      where: { leave_request_id: Number(id) },
+      include: [
+        {
+          model: User,
+          as: 'actor',
+          attributes: ['id', 'full_name', 'employee_code', 'role', 'position']
+        }
+      ],
+      order: [['created_at', 'ASC'], ['id', 'ASC']]
+    });
+
+    res.status(200).json({
+      success: true,
+      leave_request_id: Number(id),
+      total: logs.length,
+      logs
+    });
+  } catch (error) {
+    next(error);
+  }
+};

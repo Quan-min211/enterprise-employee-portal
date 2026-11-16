@@ -4,6 +4,7 @@ import {
   cancelLeaveRequest,
   createLeaveRequest,
   exportLeaveRequests,
+  getLeaveApprovalLogs,
   getLeaveRequests,
   getLeaveStats,
   updateLeaveStatus
@@ -84,6 +85,17 @@ router.patch(
   ],
   validateRequest,
   updateLeaveStatus
+);
+
+// Lấy lịch sử phê duyệt của một đơn
+router.get(
+  '/:id/logs',
+  verifyToken,
+  [
+    param('id').isInt({ min: 1 }).withMessage('Ma don khong hop le.')
+  ],
+  validateRequest,
+  getLeaveApprovalLogs
 );
 
 // Nhân viên hủy đơn của chính mình khi còn pending

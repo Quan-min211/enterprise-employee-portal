@@ -4,6 +4,7 @@ export const leavesApi = {
   list: (params = {}) => axiosClient.get('/leaves', { params }),
   create: (payload) => axiosClient.post('/leaves', payload),
   stats: (params = {}) => axiosClient.get('/leaves/stats', { params }),
+  getLogs: (id) => axiosClient.get(`/leaves/${id}/logs`),
   updateStatus: (id, payload) => axiosClient.patch(`/leaves/${id}/status`, payload),
   cancel: (id) => axiosClient.patch(`/leaves/${id}/cancel`),
   exportCsv: (params = {}) => axiosClient.get('/leaves/export', { params, responseType: 'blob' })
