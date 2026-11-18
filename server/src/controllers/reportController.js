@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import { Department, LeaveRequest, User } from '../models/index.js';
+import { getManagedDepartmentIds } from '../utils/departmentScope.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 
 const escapeCsvValue = (value) => {
@@ -53,12 +54,10 @@ export const calculateMonthlySummaryData = async (req) => {
 
   // Phân quyền phạm vi phòng ban (RBAC)
   const deptWhere = {};
-  let managerDeptId = null;
 
   if (req.user.role === 'manager') {
-    const manager = await User.findByPk(req.user.id, { attributes: ['department_id'] });
-    managerDeptId = manager?.department_id || -1;
-    deptWhere.id = managerDeptId;
+    const deptIds = await getManagedDepartmentIds(req.user.id);
+    deptWhere.id = deptIds.length > 0 ? { [Op.in]: deptIds } : -1;
   } else if (req.query.department_id) {
     deptWhere.id = parseInt(req.query.department_id, 10);
   }

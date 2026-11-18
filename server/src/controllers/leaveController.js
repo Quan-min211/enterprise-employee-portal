@@ -2,6 +2,7 @@ import { Op } from 'sequelize';
 import { sequelize } from '../config/database.js';
 import { Department, Holiday, LeaveApprovalLog, LeaveBalance, LeaveRequest, User } from '../models/index.js';
 import { ensureBalance } from './leaveBalanceController.js';
+import { getManagedDepartmentIds } from '../utils/departmentScope.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 
 const csvHeaders = [
@@ -73,12 +74,6 @@ const fetchHolidayDates = async (startDate, endDate) => {
   return new Set(holidays.map((h) => String(h.date)));
 };
 
-const getManagedDepartmentId = async (req) => {
-  if (req.user.role !== 'manager') return null;
-  const manager = await User.findByPk(req.user.id, { attributes: ['department_id'] });
-  return manager?.department_id || null;
-};
-
 const buildLeaveFilters = async (req) => {
   const where = {};
   const applicantWhere = {};
@@ -88,8 +83,8 @@ const buildLeaveFilters = async (req) => {
   }
 
   if (req.user.role === 'manager') {
-    const managedDepartmentId = await getManagedDepartmentId(req);
-    applicantWhere.department_id = managedDepartmentId || -1;
+    const deptIds = await getManagedDepartmentIds(req.user.id);
+    applicantWhere.department_id = deptIds.length > 0 ? { [Op.in]: deptIds } : -1;
   }
 
   if (req.query.department_id && req.user.role === 'admin') {
@@ -285,9 +280,9 @@ export const updateLeaveStatus = async (req, res, next) => {
 
     // Manager chỉ được duyệt đơn thuộc phòng ban mình phụ trách
     if (req.user.role === 'manager') {
-      const managedDeptId = await getManagedDepartmentId(req);
+      const deptIds = await getManagedDepartmentIds(req.user.id);
       const applicant = await User.findByPk(request.user_id, { attributes: ['department_id'] });
-      if (!managedDeptId || applicant?.department_id !== managedDeptId) {
+      if (!applicant?.department_id || !deptIds.includes(applicant.department_id)) {
         return res.status(403).json({ success: false, message: 'Ban khong co quyen duyet don cua phong ban khac.' });
       }
     }
@@ -435,12 +430,12 @@ export const getLeaveStats = async (req, res, next) => {
 
     const include = [];
     if (req.user.role === 'manager') {
-      const managedDepartmentId = await getManagedDepartmentId(req);
+      const deptIds = await getManagedDepartmentIds(req.user.id);
       include.push({
         model: User,
         as: 'applicant',
         attributes: ['id'],
-        where: { department_id: managedDepartmentId || -1 },
+        where: { department_id: deptIds.length > 0 ? { [Op.in]: deptIds } : -1 },
         required: true
       });
     }
@@ -495,8 +490,8 @@ export const getLeaveApprovalLogs = async (req, res, next) => {
     }
 
     if (req.user.role === 'manager') {
-      const managedDeptId = await getManagedDepartmentId(req);
-      if (!managedDeptId || request.applicant?.department_id !== managedDeptId) {
+      const deptIds = await getManagedDepartmentIds(req.user.id);
+      if (!request.applicant?.department_id || !deptIds.includes(request.applicant.department_id)) {
         return res.status(403).json({ success: false, message: 'Ban khong co quyen xem lich su don cua phong ban khac.' });
       }
     }

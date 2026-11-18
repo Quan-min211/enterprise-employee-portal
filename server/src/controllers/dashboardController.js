@@ -8,17 +8,18 @@ import {
   User,
   AuditLog
 } from '../models/index.js';
+import { getManagedDepartmentIds, getPrimaryManagedDepartmentId } from '../utils/departmentScope.js';
 
 const buildScopedLeaveInclude = async (req) => {
   if (req.user.role !== 'manager') return [];
 
-  const manager = await User.findByPk(req.user.id, { attributes: ['department_id'] });
+  const deptIds = await getManagedDepartmentIds(req.user.id);
   return [
     {
       model: User,
       as: 'applicant',
       attributes: ['id', 'full_name', 'employee_code', 'department_id'],
-      where: { department_id: manager?.department_id || -1 },
+      where: { department_id: deptIds.length > 0 ? { [Op.in]: deptIds } : -1 },
       required: true,
       include: [{ model: Department, as: 'department', attributes: ['id', 'name', 'code'] }]
     }
@@ -50,8 +51,7 @@ export const getDashboardSummary = async (req, res, next) => {
     // Manager: lấy department_id để dùng cho các query phòng ban
     let managerDeptId = null;
     if (role === 'manager') {
-      const mgr = await User.findByPk(req.user.id, { attributes: ['department_id'] });
-      managerDeptId = mgr?.department_id || null;
+      managerDeptId = await getPrimaryManagedDepartmentId(req.user.id);
     }
 
     const [
@@ -413,8 +413,7 @@ export const calculateTopOtDepartments = async (req, targetYear, limitCount = 5)
 
   let managerDeptId = null;
   if (req.user?.role === 'manager') {
-    const manager = await User.findByPk(req.user.id, { attributes: ['department_id'] });
-    managerDeptId = manager?.department_id || null;
+    managerDeptId = await getPrimaryManagedDepartmentId(req.user.id);
   }
 
   const deptStats = [];
@@ -855,15 +854,13 @@ export const calculateLeaveBalanceStats = async (req, targetYear, options = {}) 
   const filterDeptId = options.department_id || req.query?.department_id;
   const filterTier = options.tier || req.query?.tier || 'all';
 
-  let managerDeptId = null;
   const userWhere = { status: 'active' };
 
   if (role === 'employee') {
     userWhere.id = req.user.id;
   } else if (role === 'manager') {
-    const manager = await User.findByPk(req.user.id, { attributes: ['department_id'] });
-    managerDeptId = manager?.department_id || null;
-    userWhere.department_id = managerDeptId || -1;
+    const deptIds = await getManagedDepartmentIds(req.user.id);
+    userWhere.department_id = deptIds.length > 0 ? { [Op.in]: deptIds } : -1;
   } else if (role === 'admin' && filterDeptId) {
     userWhere.department_id = parseInt(filterDeptId, 10);
   }

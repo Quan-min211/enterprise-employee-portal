@@ -1,4 +1,6 @@
+import { Op } from 'sequelize';
 import { LeaveBalance, User, Department } from '../models/index.js';
+import { getManagedDepartmentIds } from '../utils/departmentScope.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 
 const DEFAULT_ANNUAL_DAYS = 12;
@@ -40,10 +42,8 @@ export const getBalances = async (req, res, next) => {
 
     // Manager chỉ thấy phòng ban của mình
     if (req.user.role === 'manager') {
-      const manager = await User.findByPk(req.user.id, { attributes: ['department_id'] });
-      if (manager?.department_id) {
-        userWhere.department_id = manager.department_id;
-      }
+      const deptIds = await getManagedDepartmentIds(req.user.id);
+      userWhere.department_id = deptIds.length > 0 ? { [Op.in]: deptIds } : -1;
     } else if (req.query.department_id) {
       userWhere.department_id = Number(req.query.department_id);
     }

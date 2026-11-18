@@ -8,11 +8,13 @@ import {
 } from 'lucide-react';
 import TableSkeleton, { EmptyState } from '../components/TableSkeleton';
 import { departmentsApi } from '../api/departmentsApi';
+import { employeesApi } from '../api/employeesApi';
 import { useAuth } from '../contexts/AuthContext';
 
 const emptyForm = {
   code: '',
   name: '',
+  manager_id: '',
   manager_name: '',
   description: ''
 };
@@ -20,6 +22,7 @@ const emptyForm = {
 export default function Departments() {
   const { user } = useAuth();
   const [departments, setDepartments] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [formData, setFormData] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,8 +34,12 @@ export default function Departments() {
   const fetchDepartments = async () => {
     setLoading(true);
     try {
-      const res = await departmentsApi.list();
-      setDepartments(res.departments || []);
+      const [deptRes, empRes] = await Promise.all([
+        departmentsApi.list(),
+        employeesApi.list({ limit: 50 }).catch(() => ({ employees: [] }))
+      ]);
+      setDepartments(deptRes.departments || []);
+      setEmployees(empRes.employees || []);
     } catch (err) {
       setError(err.message || 'Khong the tai danh sach phong ban.');
     } finally {
@@ -55,11 +62,21 @@ export default function Departments() {
     setMessage('');
 
     try {
+      const payload = {
+        code: formData.code,
+        name: formData.name,
+        description: formData.description,
+        manager_id: formData.manager_id ? Number(formData.manager_id) : null
+      };
+      if (!formData.manager_id && formData.manager_name) {
+        payload.manager_name = formData.manager_name;
+      }
+
       if (editingId) {
-        await departmentsApi.update(editingId, formData);
+        await departmentsApi.update(editingId, payload);
         setMessage('Cap nhat phong ban thanh cong.');
       } else {
-        await departmentsApi.create(formData);
+        await departmentsApi.create(payload);
         setMessage('Tao phong ban thanh cong.');
       }
 
@@ -75,7 +92,8 @@ export default function Departments() {
     setFormData({
       code: department.code || '',
       name: department.name || '',
-      manager_name: department.manager_name || '',
+      manager_id: department.manager_id ? String(department.manager_id) : '',
+      manager_name: department.manager?.full_name || department.manager_name || '',
       description: department.description || ''
     });
   };
@@ -160,13 +178,27 @@ export default function Departments() {
               </div>
 
               <p className="field-group">
-                <label htmlFor="department_manager">Truong bo phan</label>
-                <input
-                  id="department_manager"
-                  maxLength={100}
-                  value={formData.manager_name}
-                  onChange={(e) => setFormData({ ...formData, manager_name: e.target.value })}
-                />
+                <label htmlFor="department_manager_id">Truong bo phan (Manager)</label>
+                <select
+                  id="department_manager_id"
+                  value={formData.manager_id}
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    const matched = employees.find((emp) => String(emp.id) === selectedId);
+                    setFormData({
+                      ...formData,
+                      manager_id: selectedId,
+                      manager_name: matched ? matched.full_name : ''
+                    });
+                  }}
+                >
+                  <option value="">-- Chua gan truong bo phan --</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.full_name} ({emp.employee_code} - {emp.role})
+                    </option>
+                  ))}
+                </select>
               </p>
 
               <p className="field-group">
@@ -218,7 +250,12 @@ export default function Departments() {
                   <header>
                     <hgroup>
                       <h3>{department.name}</h3>
-                      <p><code>{department.code}</code> | {department.manager_name || 'Chua gan truong bo phan'}</p>
+                      <p>
+                        <code>{department.code}</code> |{' '}
+                        {department.manager
+                          ? `${department.manager.full_name} (${department.manager.employee_code})`
+                          : (department.manager_name || 'Chua gan truong bo phan')}
+                      </p>
                     </hgroup>
                     <mark className="badge badge-normal">{department.employee_count} NV</mark>
                   </header>
