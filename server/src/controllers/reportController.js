@@ -54,9 +54,11 @@ export const calculateMonthlySummaryData = async (req) => {
 
   // Phân quyền phạm vi phòng ban (RBAC)
   const deptWhere = {};
+  let managerDeptId = null;
 
   if (req.user.role === 'manager') {
     const deptIds = await getManagedDepartmentIds(req.user.id);
+    managerDeptId = deptIds.length > 0 ? deptIds[0] : -1;
     deptWhere.id = deptIds.length > 0 ? { [Op.in]: deptIds } : -1;
   } else if (req.query.department_id) {
     deptWhere.id = parseInt(req.query.department_id, 10);

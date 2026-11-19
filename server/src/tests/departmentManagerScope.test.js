@@ -280,7 +280,7 @@ describe('Manager Scoping via departments.manager_id', () => {
       .set('Cookie', managerCrossCookie);
 
     expect(repRes.status).toBe(200);
-    const deptCodes = repRes.body.data.departments.map((d) => d.departmentCode);
+    const deptCodes = repRes.body.summary.map((d) => d.code);
     expect(deptCodes).toEqual(['PROD-SCOPE']);
   });
 

@@ -15,7 +15,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import app from '../../server.js';
 import { sequelize } from '../config/database.js';
-import { Department, User, Holiday, LeaveRequest } from '../models/index.js';
+import { Department, User, Holiday } from '../models/index.js';
 
 let testDept = null;
 let adminUser = null;

@@ -855,12 +855,13 @@ export const calculateLeaveBalanceStats = async (req, targetYear, options = {}) 
   const filterTier = options.tier || req.query?.tier || 'all';
 
   const userWhere = { status: 'active' };
+  let managedDeptIds = [];
 
   if (role === 'employee') {
     userWhere.id = req.user.id;
   } else if (role === 'manager') {
-    const deptIds = await getManagedDepartmentIds(req.user.id);
-    userWhere.department_id = deptIds.length > 0 ? { [Op.in]: deptIds } : -1;
+    managedDeptIds = await getManagedDepartmentIds(req.user.id);
+    userWhere.department_id = managedDeptIds.length > 0 ? { [Op.in]: managedDeptIds } : -1;
   } else if (role === 'admin' && filterDeptId) {
     userWhere.department_id = parseInt(filterDeptId, 10);
   }
@@ -1029,7 +1030,7 @@ export const calculateLeaveBalanceStats = async (req, targetYear, options = {}) 
         carriedOverDays: dCarried,
         utilizationRate: dRate,
         avgRemainingPerWorker: dAvgRem,
-        isMyDepartment: managerDeptId === d.id
+        isMyDepartment: managedDeptIds.includes(d.id)
       });
     }
 
