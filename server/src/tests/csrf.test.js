@@ -60,12 +60,17 @@ describe('CSRF Token Utility Functions', () => {
     const validToken = generateCsrfToken();
     const [randomPart, sigPart] = validToken.split('.');
 
+    // Always change the first hex char so the tampered value differs from the original
+    const flipFirstHex = (value) => (value[0] === 'a' ? 'b' : 'a') + value.slice(1);
+
     // Tampered random part
-    const tamperedRandom = 'a' + randomPart.slice(1);
+    const tamperedRandom = flipFirstHex(randomPart);
+    expect(tamperedRandom).not.toBe(randomPart);
     expect(verifyCsrfTokenSignature(`${tamperedRandom}.${sigPart}`)).toBe(false);
 
     // Tampered signature
-    const tamperedSig = 'b' + sigPart.slice(1);
+    const tamperedSig = flipFirstHex(sigPart);
+    expect(tamperedSig).not.toBe(sigPart);
     expect(verifyCsrfTokenSignature(`${randomPart}.${tamperedSig}`)).toBe(false);
   });
 });
