@@ -12,6 +12,7 @@ import { AppError } from './src/utils/AppError.js';
 import { requestId } from './src/middleware/requestId.js';
 import { requestLogger } from './src/middleware/requestLogger.js';
 import { seedDatabase } from './src/config/seed.js';
+import { migrateUp } from './src/migrations/run.js';
 import { csrfProtection } from './src/middleware/csrf.js';
 
 dotenv.config({ path: '../.env' });
@@ -104,6 +105,10 @@ export const startServer = async () => {
     if (process.env.DB_SYNC !== 'false') {
       await sequelize.sync({ alter: process.env.DB_SYNC_ALTER !== 'false' });
       console.log('Database models synchronized.');
+    } else if (process.env.DB_MIGRATE !== 'false') {
+      // Production: apply pending numbered migrations (idempotent) before seeding,
+      // so new columns (e.g. deleted_at from 011) exist before any model query runs.
+      await migrateUp();
     }
 
     if (process.env.DB_SEED !== 'false') {
