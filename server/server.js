@@ -43,26 +43,32 @@ const loginLimiter = rateLimit({
   message: { success: false, message: 'Qua nhieu lan dang nhap. Vui long thu lai sau 1 phut.' }
 });
 
-// Configure CORS origin(s)
-const configuredOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',').map((url) => url.trim())
-  : ['http://localhost:5173'];
+// Configure strict CORS origin allowlist (exact match, no wildcard domains)
+export const parseAllowedOrigins = (clientUrl) => {
+  const raw = clientUrl || 'http://localhost:5173';
+  return raw
+    .split(',')
+    .map((url) => url.trim().replace(/\/+$/, ''))
+    .filter((url) => Boolean(url) && url !== '*');
+};
+
+export const isOriginAllowed = (origin, allowedOrigins) => {
+  if (!origin) return true;
+  const normalizedOrigin = origin.trim().replace(/\/+$/, '');
+  return allowedOrigins.includes(normalizedOrigin);
+};
+
+const configuredOrigins = parseAllowedOrigins(process.env.CLIENT_URL);
 
 app.use(helmet());
 app.use(requestId);
 app.use(requestLogger);
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g., mobile apps, curl, server-to-server)
-    if (!origin) return callback(null, true);
-    if (configuredOrigins.includes('*') || configuredOrigins.includes(origin)) {
+    if (isOriginAllowed(origin, configuredOrigins)) {
       return callback(null, true);
     }
-    // Allow vercel preview deployments if CLIENT_URL has vercel.app
-    if (configuredOrigins.some((allowed) => allowed.includes('vercel.app') && origin.endsWith('.vercel.app'))) {
-      return callback(null, true);
-    }
-    return callback(new Error(`CORS blocked: Origin ${origin} is not allowed.`));
+    return callback(new AppError(`CORS blocked: Origin ${origin} is not allowed.`, 403, 'CORS_BLOCKED'));
   },
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-XSRF-Token', 'X-Request-Id'],
