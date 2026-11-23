@@ -24,6 +24,11 @@ const ANNOUNCEMENTS = [
  * @param {import('sequelize').Sequelize} sequelize
  */
 export async function up(_qi, sequelize) {
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('[seeder 003_demo_accounts] Production environment detected: skipping demo user & announcement seed.');
+    return;
+  }
+
   // Fetch department map
   const [depts] = await sequelize.query('SELECT id, code FROM `departments`');
   const deptMap = new Map(depts.map((d) => [d.code, d.id]));

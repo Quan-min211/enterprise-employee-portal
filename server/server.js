@@ -117,9 +117,11 @@ export const startServer = async () => {
       await migrateUp();
     }
 
-    if (process.env.DB_SEED !== 'false') {
+    if (process.env.DB_SEED !== 'false' && process.env.NODE_ENV !== 'production') {
       await seedDatabase();
       console.log('Seed data ensured.');
+    } else if (process.env.NODE_ENV === 'production' && process.env.DB_SEED === 'true') {
+      console.warn('[server] DB_SEED=true is ignored in production to prevent creating default accounts.');
     }
 
     serverInstance = app.listen(PORT, () => {

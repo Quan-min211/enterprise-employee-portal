@@ -15,11 +15,13 @@ services:
       - key: PORT
         value: 3000
       - key: DB_SYNC
-        value: "true"
+        value: "false"
       - key: DB_SYNC_ALTER
+        value: "false"
+      - key: DB_MIGRATE
         value: "true"
       - key: DB_SEED
-        value: "true"
+        value: "false"
       - key: JWT_EXPIRES_IN
         value: 8h
       - key: DB_SSL

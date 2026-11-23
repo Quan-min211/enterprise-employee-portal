@@ -24,6 +24,11 @@ const announcements = [
 ];
 
 export const seedDatabase = async () => {
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('[seedDatabase] Production environment detected: refusing to seed default demo accounts with known passwords.');
+    return { skipped: true, reason: 'production_guard' };
+  }
+
   const departmentMap = new Map();
 
   for (const departmentData of departments) {
