@@ -88,6 +88,7 @@ function DocumentTitle() {
 // ---------------------------------------------------------------------------
 function ProtectedLayout() {
   const { user, loading } = useAuth();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -114,6 +115,10 @@ function ProtectedLayout() {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (user.must_change_password && location.pathname !== '/profile') {
+    return <Navigate to="/profile" replace />;
   }
 
   return (

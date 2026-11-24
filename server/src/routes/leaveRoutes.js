@@ -9,10 +9,11 @@ import {
   getLeaveStats,
   updateLeaveStatus
 } from '../controllers/leaveController.js';
-import { verifyToken, checkRole } from '../middleware/auth.js';
+import { verifyToken, checkRole, checkMustChangePassword } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validateRequest.js';
 
 const router = Router();
+router.use(verifyToken, checkMustChangePassword);
 
 
 router.post(

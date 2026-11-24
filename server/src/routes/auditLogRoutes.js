@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { query } from 'express-validator';
 import { exportAuditLogs, getAuditLogs } from '../controllers/auditLogController.js';
-import { checkRole, verifyToken } from '../middleware/auth.js';
+import { checkMustChangePassword, checkRole, verifyToken } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validateRequest.js';
 
 const router = Router();
+router.use(verifyToken, checkMustChangePassword);
 
 const filterValidators = [
   query('user_id').optional().isInt({ min: 1 }).withMessage('user_id khong hop le.'),

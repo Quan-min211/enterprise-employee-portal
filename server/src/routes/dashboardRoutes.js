@@ -7,10 +7,11 @@ import {
   getApprovalRate,
   getLeaveBalanceStats
 } from '../controllers/dashboardController.js';
-import { verifyToken } from '../middleware/auth.js';
+import { checkMustChangePassword, verifyToken } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validateRequest.js';
 
 const router = Router();
+router.use(verifyToken, checkMustChangePassword);
 
 router.get('/summary', verifyToken, getDashboardSummary);
 

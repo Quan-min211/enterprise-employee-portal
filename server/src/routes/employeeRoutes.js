@@ -10,7 +10,7 @@ import {
   updateEmployee,
   updateMyProfile
 } from '../controllers/employeeController.js';
-import { checkRole, verifyToken } from '../middleware/auth.js';
+import { checkMustChangePassword, checkRole, verifyToken } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validateRequest.js';
 import { passwordValidator } from '../utils/passwordPolicy.js';
 
@@ -19,6 +19,7 @@ const router = Router();
 router.get(
   '/',
   verifyToken,
+  checkMustChangePassword,
   [
     query('page').optional().isInt({ min: 1 }).withMessage('Trang khong hop le.'),
     query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('Gioi han tu 1 den 50.'),
@@ -31,6 +32,7 @@ router.get(
 router.post(
   '/',
   verifyToken,
+  checkMustChangePassword,
   checkRole(['admin']),
   [
     body('employee_code').trim().isLength({ min: 3, max: 20 }).withMessage('Ma nhan vien tu 3 den 20 ky tu.'),
@@ -50,6 +52,7 @@ router.post(
 router.put(
   '/me',
   verifyToken,
+  checkMustChangePassword,
   [
     body('full_name').optional().trim().isLength({ min: 2, max: 100 }).withMessage('Ho ten tu 2 den 100 ky tu.'),
     body('phone').optional({ nullable: true }).trim().isLength({ max: 20 }).withMessage('So dien thoai toi da 20 ky tu.'),
@@ -73,6 +76,7 @@ router.put(
 router.get(
   '/export',
   verifyToken,
+  checkMustChangePassword,
   checkRole(['admin', 'manager']),
   [
     query('search').optional().trim(),
@@ -86,6 +90,7 @@ router.get(
 router.get(
   '/:id',
   verifyToken,
+  checkMustChangePassword,
   [param('id').isInt({ min: 1 }).withMessage('Ma nhan vien khong hop le.')],
   validateRequest,
   getEmployeeById
@@ -94,6 +99,7 @@ router.get(
 router.put(
   '/:id',
   verifyToken,
+  checkMustChangePassword,
   checkRole(['admin']),
   [
     param('id').isInt({ min: 1 }).withMessage('Ma nhan vien khong hop le.'),
@@ -115,6 +121,7 @@ router.put(
 router.delete(
   '/:id',
   verifyToken,
+  checkMustChangePassword,
   checkRole(['admin']),
   [param('id').isInt({ min: 1 }).withMessage('Ma nhan vien khong hop le.')],
   validateRequest,

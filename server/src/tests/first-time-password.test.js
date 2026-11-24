@@ -82,6 +82,37 @@ describe('First-time password change workflow', () => {
     expect(res.body.message).toMatch(/đổi mật khẩu lần đầu|Ban can doi mat khau lan dau/i);
   });
 
+  it('blocks access to business endpoints (403 PASSWORD_CHANGE_REQUIRED) until first-time password is changed (SEC-03)', async () => {
+    const loginRes = await request(app)
+      .post('/api/auth/login')
+      .send({ email: employeeEmail, password: tempPassword });
+
+    const empCookie = loginRes.headers['set-cookie'];
+
+    const endpoints = [
+      { method: 'get', path: '/api/employees' },
+      { method: 'get', path: '/api/leaves' },
+      { method: 'get', path: '/api/announcements' },
+      { method: 'get', path: '/api/departments' },
+      { method: 'get', path: '/api/dashboard/summary' },
+      { method: 'get', path: '/api/holidays' },
+      { method: 'get', path: '/api/leave-balances/me' },
+      { method: 'put', path: '/api/employees/me', body: { full_name: 'Bypass Attempt' } }
+    ];
+
+    for (const ep of endpoints) {
+      const req = request(app)[ep.method](ep.path).set('Cookie', empCookie);
+      const res = ep.body ? await req.send(ep.body) : await req;
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('PASSWORD_CHANGE_REQUIRED');
+    }
+
+    // /api/auth/me must still be accessible so frontend can detect must_change_password
+    const meRes = await request(app).get('/api/auth/me').set('Cookie', empCookie);
+    expect(meRes.status).toBe(200);
+    expect(meRes.body.must_change_password).toBe(true);
+  });
+
   it('employee cannot change password to the same temporary password', async () => {
     const loginRes = await request(app)
       .post('/api/auth/login')

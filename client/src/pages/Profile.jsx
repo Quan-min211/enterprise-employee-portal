@@ -42,6 +42,7 @@ export default function Profile() {
 
     try {
       await employeesApi.changePassword(passwordForm);
+      await refreshUser();
       setPasswordForm({ current_password: '', new_password: '' });
       setMessage('Đổi mật khẩu thành công.');
     } catch (err) {
@@ -64,6 +65,11 @@ export default function Profile() {
         </hgroup>
       </header>
 
+      {user?.must_change_password && (
+        <aside className="alert" role="alert">
+          <strong>Yêu cầu bảo mật:</strong> Bạn đang sử dụng mật khẩu tạm thời/mặc định. Vui lòng đổi mật khẩu mới ở bên dưới trước khi truy cập các chức năng khác.
+        </aside>
+      )}
       {message && <aside className="alert success-alert" aria-live="polite">{message}</aside>}
       {error && <aside className="alert" aria-live="polite">{error}</aside>}
 

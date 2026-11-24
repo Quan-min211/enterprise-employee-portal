@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { body, param, query } from 'express-validator';
 import { getMyBalance, getBalances, updateBalance } from '../controllers/leaveBalanceController.js';
-import { verifyToken, checkRole } from '../middleware/auth.js';
+import { verifyToken, checkRole, checkMustChangePassword } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validateRequest.js';
 
 const router = Router();
+router.use(verifyToken, checkMustChangePassword);
 
 // GET /api/leave-balances/me?year=YYYY — nhân viên xem số dư của mình
 router.get(

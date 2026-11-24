@@ -7,10 +7,11 @@ import {
   seedDefaultHolidays,
   updateHoliday
 } from '../controllers/holidayController.js';
-import { checkRole, verifyToken } from '../middleware/auth.js';
+import { checkMustChangePassword, checkRole, verifyToken } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validateRequest.js';
 
 const router = Router();
+router.use(verifyToken, checkMustChangePassword);
 
 // GET /api/holidays?year=YYYY — tất cả roles xem được
 router.get(

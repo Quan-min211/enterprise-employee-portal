@@ -6,10 +6,11 @@ import {
   getDepartments,
   updateDepartment
 } from '../controllers/departmentController.js';
-import { checkRole, verifyToken } from '../middleware/auth.js';
+import { checkMustChangePassword, checkRole, verifyToken } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validateRequest.js';
 
 const router = Router();
+router.use(verifyToken, checkMustChangePassword);
 
 router.get(
   '/',

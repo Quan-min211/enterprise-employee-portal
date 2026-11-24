@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { body, param, query } from 'express-validator';
 import { createAnnouncement, deleteAnnouncement, getAnnouncements, updateAnnouncement } from '../controllers/announcementController.js';
-import { verifyToken, checkRole } from '../middleware/auth.js';
+import { verifyToken, checkRole, checkMustChangePassword } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validateRequest.js';
 
 const router = Router();
+router.use(verifyToken, checkMustChangePassword);
 
 router.get(
   '/',

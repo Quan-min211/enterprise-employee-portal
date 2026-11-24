@@ -43,6 +43,15 @@ axiosClient.interceptors.response.use(
       requestUrl.includes('/auth/me') ||
       requestUrl.includes('/auth/csrf-token');
 
+    const errorCode = error.response?.data?.code;
+    if (error.response?.status === 403 && errorCode === 'PASSWORD_CHANGE_REQUIRED') {
+      if (typeof window !== 'undefined' && window.location.pathname !== '/profile') {
+        window.location.assign('/profile');
+      }
+      const message = error.response?.data?.message || 'Bạn cần đổi mật khẩu lần đầu trước khi tiếp tục.';
+      return Promise.reject(new Error(message));
+    }
+
     if ((error.response?.status === 401 || error.response?.status === 403) && !isAuthEndpoint) {
       if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
         window.sessionStorage.setItem('session-expired', '1');
