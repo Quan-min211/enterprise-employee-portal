@@ -67,6 +67,11 @@ export const User = sequelize.define('User', {
     type: DataTypes.DATE,
     allowNull: true
   },
+  token_version: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    allowNull: false
+  },
   department_id: {
     type: DataTypes.INTEGER,
     allowNull: true

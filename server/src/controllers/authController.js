@@ -145,7 +145,8 @@ export const login = async (req, res, next) => {
         email: user.email,
         role: user.role,
         name: user.full_name,
-        must_change_password: Boolean(user.must_change_password)
+        must_change_password: Boolean(user.must_change_password),
+        token_version: user.token_version ?? 0
       },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
@@ -182,20 +183,25 @@ export const login = async (req, res, next) => {
   }
 };
 
-export const logout = async (req, res) => {
-  if (req.user?.id) {
-    await writeAuditLog({
-      req,
-      userId: req.user.id,
-      action: 'auth.logout',
-      entityType: 'user',
-      entityId: req.user.id
-    });
-  }
+export const logout = async (req, res, next) => {
+  try {
+    if (req.user?.id) {
+      await User.increment('token_version', { by: 1, where: { id: req.user.id } });
+      await writeAuditLog({
+        req,
+        userId: req.user.id,
+        action: 'auth.logout',
+        entityType: 'user',
+        entityId: req.user.id
+      });
+    }
 
-  res.clearCookie('token', getClearCookieOptions(true));
-  clearCsrfCookies(res);
-  res.status(200).json({ success: true, message: 'Đăng xuất thành công.' });
+    res.clearCookie('token', getClearCookieOptions(true));
+    clearCsrfCookies(res);
+    res.status(200).json({ success: true, message: 'Đăng xuất thành công.' });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const getMe = async (req, res, next) => {

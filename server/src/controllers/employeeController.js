@@ -158,6 +158,15 @@ export const updateEmployee = async (req, res, next) => {
       payload.locked_until = null;
     }
 
+    const shouldRevokeSessions =
+      Boolean(req.body.password) ||
+      payload.status === 'inactive' ||
+      (payload.role && payload.role !== employee.role);
+
+    if (shouldRevokeSessions) {
+      payload.token_version = (employee.token_version ?? 0) + 1;
+    }
+
     if (req.body.unlock === true) {
       payload.failed_login_attempts = 0;
       payload.locked_until = null;
@@ -202,6 +211,7 @@ export const deactivateEmployee = async (req, res, next) => {
     }
 
     employee.status = 'inactive';
+    employee.token_version = (employee.token_version ?? 0) + 1;
     await employee.save();
 
     await writeAuditLog({
@@ -288,9 +298,10 @@ export const changeMyPassword = async (req, res, next) => {
     const wasFirstTime = Boolean(user.must_change_password);
     user.password = await bcrypt.hash(new_password, 10);
     user.must_change_password = false;
+    user.token_version = (user.token_version ?? 0) + 1;
     await user.save();
 
-    // Re-issue JWT cookie so the session immediately reflects must_change_password: false
+    // Re-issue JWT cookie so the current session reflects must_change_password: false and new token_version
     if (process.env.JWT_SECRET) {
       const token = jwt.sign(
         {
@@ -298,7 +309,8 @@ export const changeMyPassword = async (req, res, next) => {
           email: user.email,
           role: user.role,
           name: user.full_name,
-          must_change_password: false
+          must_change_password: false,
+          token_version: user.token_version
         },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
+import { User } from '../models/index.js';
 
-export const verifyToken = (req, res, next) => {
+export const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
 
   if (!token) {
@@ -11,25 +12,58 @@ export const verifyToken = (req, res, next) => {
     });
   }
 
-  try {
-    if (!process.env.JWT_SECRET) {
-      const isProd = process.env.NODE_ENV === 'production';
-      return res.status(500).json({
-        success: false,
-        code: 'INTERNAL_SERVER_ERROR',
-        message: isProd ? 'Đã xảy ra lỗi máy chủ nội bộ.' : 'He thong chua cau hinh JWT_SECRET.'
-      });
-    }
+  if (!process.env.JWT_SECRET) {
+    const isProd = process.env.NODE_ENV === 'production';
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: isProd ? 'Đã xảy ra lỗi máy chủ nội bộ.' : 'He thong chua cau hinh JWT_SECRET.'
+    });
+  }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
   } catch {
     return res.status(403).json({
       success: false,
       code: 'INVALID_TOKEN',
       message: 'Token không hợp lệ hoặc đã hết hạn.'
     });
+  }
+
+  try {
+    const user = await User.findByPk(decoded.id, {
+      attributes: ['id', 'status', 'role', 'must_change_password', 'token_version']
+    });
+
+    if (!user || user.status !== 'active') {
+      return res.status(401).json({
+        success: false,
+        code: 'TOKEN_REVOKED',
+        message: 'Tài khoản không tồn tại hoặc đã bị vô hiệu hóa.'
+      });
+    }
+
+    const tokenVersion = decoded.token_version ?? 0;
+    const currentVersion = user.token_version ?? 0;
+    if (tokenVersion !== currentVersion) {
+      return res.status(401).json({
+        success: false,
+        code: 'TOKEN_REVOKED',
+        message: 'Phiên đăng nhập đã hết hiệu lực hoặc đã đăng xuất. Vui lòng đăng nhập lại.'
+      });
+    }
+
+    req.user = {
+      ...decoded,
+      role: user.role,
+      must_change_password: Boolean(user.must_change_password),
+      token_version: currentVersion
+    };
+    next();
+  } catch (error) {
+    next(error);
   }
 };
 
