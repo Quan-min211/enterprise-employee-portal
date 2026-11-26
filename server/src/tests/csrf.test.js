@@ -9,7 +9,8 @@ import { sequelize } from '../config/database.js';
 import { Department, User } from '../models/index.js';
 import {
   generateCsrfToken,
-  verifyCsrfTokenSignature
+  verifyCsrfTokenSignature,
+  resolveCsrfSecret
 } from '../middleware/csrf.js';
 
 let testDept = null;
@@ -72,6 +73,29 @@ describe('CSRF Token Utility Functions', () => {
     const tamperedSig = flipFirstHex(sigPart);
     expect(tamperedSig).not.toBe(sigPart);
     expect(verifyCsrfTokenSignature(`${randomPart}.${tamperedSig}`)).toBe(false);
+  });
+
+  it('throws in production when neither CSRF_SECRET nor JWT_SECRET is configured (SEC-05)', () => {
+    const origNodeEnv = process.env.NODE_ENV;
+    const origCsrf = process.env.CSRF_SECRET;
+    const origJwt = process.env.JWT_SECRET;
+
+    try {
+      process.env.NODE_ENV = 'production';
+      delete process.env.CSRF_SECRET;
+      delete process.env.JWT_SECRET;
+
+      expect(() => resolveCsrfSecret()).toThrow(/CSRF_SECRET or JWT_SECRET/);
+
+      process.env.CSRF_SECRET = 'prod-strong-csrf-secret-value';
+      expect(resolveCsrfSecret()).toBe('prod-strong-csrf-secret-value');
+    } finally {
+      process.env.NODE_ENV = origNodeEnv;
+      if (origCsrf !== undefined) process.env.CSRF_SECRET = origCsrf;
+      else delete process.env.CSRF_SECRET;
+      if (origJwt !== undefined) process.env.JWT_SECRET = origJwt;
+      else delete process.env.JWT_SECRET;
+    }
   });
 });
 

@@ -1,6 +1,29 @@
 import crypto from 'crypto';
+import { getCsrfCookieOptions, getClearCookieOptions } from '../config/cookie.js';
 
-const CSRF_SECRET = process.env.CSRF_SECRET || process.env.JWT_SECRET || 'fusheng-csrf-secret-key-2026';
+let ephemeralDevSecret = null;
+
+/**
+ * Resolve HMAC secret for CSRF token signing/verification.
+ * Never uses a hardcoded fallback string.
+ * - Production: strictly requires CSRF_SECRET or JWT_SECRET (fails closed).
+ * - Non-production: uses env secret if set, otherwise generates a per-process CSPRNG secret.
+ */
+export const resolveCsrfSecret = () => {
+  const configured = (process.env.CSRF_SECRET || process.env.JWT_SECRET || '').trim();
+  if (configured) {
+    return configured;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('CRITICAL: CSRF_SECRET or JWT_SECRET environment variable must be configured in production.');
+  }
+
+  if (!ephemeralDevSecret) {
+    ephemeralDevSecret = crypto.randomBytes(32).toString('hex');
+  }
+  return ephemeralDevSecret;
+};
 
 /**
  * Generate cryptographically secure HMAC-signed CSRF token
@@ -8,7 +31,7 @@ const CSRF_SECRET = process.env.CSRF_SECRET || process.env.JWT_SECRET || 'fushen
  */
 export const generateCsrfToken = () => {
   const randomBytes = crypto.randomBytes(32).toString('hex');
-  const hmac = crypto.createHmac('sha256', CSRF_SECRET).update(randomBytes).digest('hex');
+  const hmac = crypto.createHmac('sha256', resolveCsrfSecret()).update(randomBytes).digest('hex');
   return `${randomBytes}.${hmac}`;
 };
 
@@ -23,7 +46,7 @@ export const verifyCsrfTokenSignature = (token) => {
   const [randomBytes, signature] = parts;
   if (!randomBytes || !signature) return false;
 
-  const expectedHmac = crypto.createHmac('sha256', CSRF_SECRET).update(randomBytes).digest('hex');
+  const expectedHmac = crypto.createHmac('sha256', resolveCsrfSecret()).update(randomBytes).digest('hex');
   const sigBuffer = Buffer.from(signature, 'utf8');
   const expectedBuffer = Buffer.from(expectedHmac, 'utf8');
 
@@ -31,8 +54,7 @@ export const verifyCsrfTokenSignature = (token) => {
   return crypto.timingSafeEqual(sigBuffer, expectedBuffer);
 };
 
-export { getCsrfCookieOptions } from '../config/cookie.js';
-import { getCsrfCookieOptions, getClearCookieOptions } from '../config/cookie.js';
+export { getCsrfCookieOptions };
 
 /**
  * Set both HttpOnly cookie (_csrf) for strict server validation
