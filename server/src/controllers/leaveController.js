@@ -3,6 +3,7 @@ import { sequelize } from '../config/database.js';
 import { Department, Holiday, LeaveApprovalLog, LeaveBalance, LeaveRequest, User } from '../models/index.js';
 import { ensureBalance } from './leaveBalanceController.js';
 import { getManagedDepartmentIds } from '../utils/departmentScope.js';
+import { escapeCsvValue } from '../utils/csv.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 
 const csvHeaders = [
@@ -20,11 +21,6 @@ const leaveInclude = [
   },
   { model: User, as: 'approver', attributes: ['id', 'full_name'] }
 ];
-
-const escapeCsvValue = (value) => {
-  const normalized = value === null || value === undefined ? '' : String(value);
-  return `"${normalized.replace(/"/g, '""')}"`;
-};
 
 /**
  * Tính số ngày công thực tế giữa 2 ngày (loại trừ Chủ nhật, tính Thứ 7 = 0.5).

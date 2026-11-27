@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import { AuditLog, User } from '../models/index.js';
+import { escapeCsvValue } from '../utils/csv.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 
 export const getAuditLogs = async (req, res, next) => {
@@ -32,11 +33,6 @@ export const getAuditLogs = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
-
-const escapeCsvValue = (value) => {
-  const normalized = value === null || value === undefined ? '' : String(value);
-  return `"${normalized.replace(/"/g, '""')}"`;
 };
 
 const auditCsvHeaders = [

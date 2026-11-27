@@ -1,12 +1,8 @@
 import { Op } from 'sequelize';
 import { Department, LeaveRequest, User } from '../models/index.js';
 import { getManagedDepartmentIds } from '../utils/departmentScope.js';
+import { escapeCsvValue } from '../utils/csv.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
-
-const escapeCsvValue = (value) => {
-  const normalized = value === null || value === undefined ? '' : String(value);
-  return `"${normalized.replace(/"/g, '""')}"`;
-};
 
 const reportCsvHeaders = [
   'Năm',

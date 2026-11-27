@@ -4,6 +4,7 @@ import { Op } from 'sequelize';
 import { Department, User } from '../models/index.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 import { getAuthCookieOptions } from '../config/cookie.js';
+import { escapeCsvValue } from '../utils/csv.js';
 import { validatePasswordPolicy } from '../utils/passwordPolicy.js';
 
 
@@ -335,11 +336,6 @@ export const changeMyPassword = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
-
-const escapeCsvValue = (value) => {
-  const normalized = value === null || value === undefined ? '' : String(value);
-  return `"${normalized.replace(/"/g, '""')}"`;
 };
 
 const employeeCsvHeaders = [
